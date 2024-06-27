@@ -37,14 +37,14 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, record=point)
+            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION record=point)
         except Exception as e:
-            print(f"could not upload sun packet: {e}")
+            print(f"could not upload sun heartbeat: {e}")
 
     def upload_batt(self, time, data):
         (batt_soc, current, boot_count) = data
         upload = {
-            "time": time,
+            "sat_time": time,
             "battery_soc": batt_soc,
             "current": current,
             "boot_counter": boot_count,
@@ -53,7 +53,7 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, record=point)
+            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
         except Exception as e:
             print(f"Could not upload battery heartbeat: {e}")
 
@@ -61,7 +61,7 @@ class Database:
         (mag_x, mag_y, mag_z,
          gyro_x, gyro_y, gyro_z) = data
         upload = {
-            "time": time,
+            "sat_time": time,
             "mag_x": mag_x,
             "mag_y": mag_y,
             "mag_z": mag_z,
@@ -73,6 +73,6 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, record=point)
+            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
         except Exception as e:
             print(f"Could not upload imu heartbeat: {e}")
