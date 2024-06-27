@@ -10,11 +10,11 @@ from lib.passwords import INFLUXDB_IP, INFLUXDB_ORGANIZATION, INFLUXDB_TOKEN
 
 
 class Database:
-    def __init__(self, bucket) -> None:
+    def __init__(self) -> None:
         self.client = influxdb_client.InfluxDBClient(url=INFLUXDB_IP,
                                                      token=INFLUXDB_TOKEN,
                                                      org=INFLUXDB_ORGANIZATION)
-        self.bucket = bucket
+        self.bucket = "heartbeats"
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
     def upload_data(self, type, t, data):
