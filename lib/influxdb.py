@@ -37,7 +37,7 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION record=point)
+            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
         except Exception as e:
             print(f"could not upload sun heartbeat: {e}")
 
