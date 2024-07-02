@@ -22,7 +22,7 @@ def hard_exit(radio, signum, fram):
 signal.signal(signal.SIGINT, lambda signum, frame: hard_exit(radio, signum, frame))
 
 while True:
-    print("receiving...")
+    print("waiting for packet...")
     msg = radiohead.receive_message()
     if msg is not None:
         res = unpack_message(msg)
