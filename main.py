@@ -8,7 +8,7 @@ from lib.influxdb import Database
 
 
 radio = LoRa(0, 19, 25, modem_config=ModemConfig.Bw125Cr45Sf128, acks=False, freq=433)
-radiohead = RadioHead(radio, 10)
+radiohead = RadioHead(radio, 15)
 
 database = Database()
 
