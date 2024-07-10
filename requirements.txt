@@ -1,0 +1,6 @@
+gpiozero==2.0
+influxdb3-python==0.5.0
+influxdb_client==1.44.0
+mysql-connector-python==8.4.0
+pymongo==4.7.3
+spidev==3.5
