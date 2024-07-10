@@ -1,11 +1,12 @@
-from lib.passwords import CONNECTION_STRING
 from pymongo.mongo_client import MongoClient
+
 from lib.constants import Message_IDS
+from lib.passwords import MONGO_CONNECTION_STRING
 
 
 class Database:
     def __init__(self) -> None:
-        self.client = MongoClient(CONNECTION_STRING)
+        self.client = MongoClient(MONGO_CONNECTION_STRING)
 
     def upload_data(self, type, time, data):
         if type == Message_IDS.SAT_HEARTBEAT_SUN:

@@ -4,11 +4,11 @@ import sys
 from lib.argus_lora import LoRa, ModemConfig
 from lib.radio_utils import unpack_message
 from lib.radiohead import RadioHead
-from lib.mysql_server_db import Database
+from lib.influxdb import Database
 
 
 radio = LoRa(0, 19, 25, modem_config=ModemConfig.Bw125Cr45Sf128, acks=False, freq=433)
-radiohead = RadioHead(radio, 10)
+radiohead = RadioHead(radio, 15)
 
 database = Database()
 
@@ -22,7 +22,7 @@ def hard_exit(radio, signum, fram):
 signal.signal(signal.SIGINT, lambda signum, frame: hard_exit(radio, signum, frame))
 
 while True:
-    print("receiving...")
+    print("waiting for packet...")
     msg = radiohead.receive_message()
     if msg is not None:
         res = unpack_message(msg)
