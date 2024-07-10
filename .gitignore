@@ -1,1 +1,3 @@
 lib/passwords.py
+env/
+*.pyc
