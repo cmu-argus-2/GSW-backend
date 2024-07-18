@@ -13,6 +13,16 @@ class RadioHead:
         self.tx_ctrl = LED(23)
         self.receive_success = False
 
+    def send_message(self, data, header_to, with_ack, header_id=0, header_flags=0):
+        self.tx_ctrl.on()
+        self.radio.set_mode_tx()
+        if with_ack:
+            result = self.radio.send(data, header_to, header_id, header_flags)
+        else:
+            result = self.radio.send_to_wait(data, header_to, header_flags, 3)
+        self.tx_ctrl.off()
+        return result
+
     def receive_message(self) -> bytes:
         self.rx_ctrl.on()
         self.receive_success = False
