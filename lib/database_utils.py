@@ -1,4 +1,4 @@
-from influxdb import Database
+from lib.influxdb import Database
 
 
 def initialize_database(bucket, point):

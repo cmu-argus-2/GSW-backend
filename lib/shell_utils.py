@@ -1,9 +1,8 @@
 import signal
 import sys
 
-from influxdb import Database
-from radio_utils import initialize_radio, unpack_message
-from database_utils import initialize_database
+from lib.radio_utils import initialize_radio, unpack_message
+from lib.database_utils import initialize_database
 
 
 def hard_exit(radio, db, signum, frame):
