@@ -18,22 +18,22 @@ from lib.shell_utils import receive_loop
 
 while True:
     connection_prompt = """
-        Are you connecting to the satellite via:
-        - (r) Radio Frequency
-        - (t) tty/serial
-        - (e) emulated/simulated satellite
-        - (q) quit
-    """
+Are you connecting to the satellite via:
+ - (r) Radio Frequency
+ - (t) tty/serial
+ - (e) emulated/simulated satellite
+ - (q) quit
+: """
     conn_type = input(connection_prompt)
     if conn_type == 'q':
         sys.exit(0)
 
     for_prompt = """
-        Are you...
-        - (r) receive heartbeats from satellite
-        - (c) sending a command to the satellite
-        - (q) quit
-        """
+Are you...
+ - (r) receive heartbeats from satellite
+ - (c) sending a command to the satellite
+ - (q) quit
+: """
     reason = input(for_prompt)
     if reason == 'q':
         sys.exit(0)
