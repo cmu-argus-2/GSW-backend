@@ -1,6 +1,8 @@
 import sys
 
-from lib.shell_utils import receive_loop
+from lib.shell_utils import (receive_loop, receive_loop_emulator,
+                             receive_loop_serial, send_command,
+                             send_command_emulator, send_command_serial)
 
 # radio = LoRa(0, 19, 25, modem_config=ModemConfig.Bw125Cr45Sf128, acks=False, freq=433)
 # radiohead = RadioHead(radio, 15)
@@ -41,15 +43,15 @@ Are you...
     options = {
         "r": {
             "r": receive_loop,
-            "c": lambda *args: None,
+            "c": send_command
         },
         "t": {
-            "r": lambda *args: None,
-            "c": lambda *args: None,
+            "r": receive_loop_serial,
+            "c": send_command_serial,
         },
         "e": {
-            "r": lambda *args: None,
-            "c": lambda *args: None,
+            "r": receive_loop_emulator,
+            "c": send_command_emulator,
         },
     }
 

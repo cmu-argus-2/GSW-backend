@@ -1,8 +1,10 @@
 import signal
 import sys
 
-from lib.radio_utils import initialize_radio, unpack_message
+import serial
+
 from lib.database_utils import initialize_database
+from lib.radio_utils import initialize_radio, unpack_message
 
 
 def hard_exit(radiohead, db, signum, frame):
@@ -32,3 +34,26 @@ def receive_loop():
             if res is not None:
                 id, time, data = res
                 database.upload_data(id, time, data)
+
+
+def send_command():
+    pass
+
+
+def receive_loop_serial():
+    # the serial port to listen on
+    ser = serial.Serial('/dev/ttyACM0')
+    while True:
+        print(ser.readlines())
+
+
+def send_command_serial():
+    pass
+
+
+def receive_loop_emulator():
+    pass
+
+
+def send_command_emulator():
+    pass

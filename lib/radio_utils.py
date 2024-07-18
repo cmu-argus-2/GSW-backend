@@ -179,7 +179,7 @@ def initialize_radio() -> RadioHead:
         receive_all=RECEIVE_ALL,
         acks=ACKS,
         crypto=CRYTPO)
-    
+
     # RadioHead wrapper class that overwrites on_recv and adds a receive method
     radiohead = RadioHead(radio, 15)
     return radiohead
