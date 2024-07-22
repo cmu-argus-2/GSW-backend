@@ -49,10 +49,29 @@ def send_command():
 
 
 def receive_loop_serial():
+    def ser_exit(serial, database):
+        serial.close()
+        database.client.close()
+        sys.exit(0)
+
+    signal.signal(
+        signal.SIGINT,
+        lambda signum, frame: ser_exit(ser, database, signum, frame)
+    )
     # the serial port to listen on
     ser = serial.Serial('/dev/ttyACM0')
+    database = initialize_database('heartbeats', "serial")
     while True:
-        print(ser.readlines())
+        packet = ser.readline()
+        if not packet:
+            break
+        if packet.startswith(b"[100][SERIAL OUTPUT] "):
+            print(packet)
+            # packet_dict = receive_message(packet)
+            # res = unpack_message(packet_dict)
+            # if res is not None:
+            #     id, time, msg = res
+            #     database.upload_data(id, time, msg)
 
 
 def send_command_serial():
