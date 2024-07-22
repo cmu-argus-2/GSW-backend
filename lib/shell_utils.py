@@ -3,6 +3,8 @@ import sys
 
 import serial
 import socket
+from random import randint
+from collections import namedtuple
 
 from lib.database_utils import initialize_database
 from lib.radio_utils import initialize_radio, unpack_message
@@ -60,7 +62,7 @@ def send_command_serial():
 def receive_loop_emulator():
     # emulator will send data via a socket on port 5000
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((socket.gethostname(), 5000))
+    serversocket.bind((socket.gethostname(), 5500))
 
     database = initialize_database('heartbeats', "emulator")
 
@@ -70,16 +72,28 @@ def receive_loop_emulator():
         with clientsocket:
             print(f"connected to {address}")
             while True:
-                data = clientsocket.recv(256)
-                if not data:
+                packet = clientsocket.recv(256)
+                if not packet:
                     break
-                print(data)
-                # res = unpack_message(data)
-                # if res is not None:
-                #     id, time, data = res
-                #     print(id, time, data)
-                #     database.upload_data(id, time, data)
+                packet_dict = receive_message(packet)
+                res = unpack_message(packet_dict)
+                if res is not None:
+                    id, time, data = res
+                    database.upload_data(id, time, data)
 
+
+def receive_message(packet):
+    header_to = packet[0]
+    header_from = packet[1]
+    header_id = packet[2]
+    header_flags = packet[3]
+    message = bytes(packet[4:]) if len(packet) > 4 else b''
+    rssi = randint(20, 120)
+    snr = randint(0, 300)
+    return namedtuple(
+        "Payload",
+        ['message', 'header_to', 'header_from', 'header_id', 'header_flags', 'rssi', 'snr']
+    )(message, header_to, header_from, header_id, header_flags, rssi, snr)
 
 def send_command_emulator():
     pass
