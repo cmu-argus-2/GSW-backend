@@ -49,7 +49,7 @@ def send_command():
 
 
 def receive_loop_serial():
-    def ser_exit(serial, database):
+    def ser_exit(serial, database, signum, frame):
         serial.close()
         database.client.close()
         sys.exit(0)
