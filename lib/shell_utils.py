@@ -94,6 +94,9 @@ def receive_loop_emulator():
                 packet = clientsocket.recv(256)
                 if not packet:
                     break
+                packet_enc = packet.decode('utf-8')
+                packet_formatted = packet_enc[23:]
+                print(packet_formatted)
                 packet_dict = receive_message(packet)
                 res = unpack_message(packet_dict)
                 if res is not None:
