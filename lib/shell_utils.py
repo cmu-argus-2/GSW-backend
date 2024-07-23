@@ -68,7 +68,7 @@ def receive_loop_serial():
         if packet.startswith(b"[100][SERIAL OUTPUT]:"):
             packet_dec = packet.decode('utf-8')
             packet_formatted = packet_dec[23:]
-            packet_b = packet_formatted.endcode().decode('unicode_escaped')
+            packet_b = packet_formatted.encode().decode('unicode_escaped')
             print(packet_b)
             packet_dict = receive_message(packet_b)
             res = unpack_message(packet_dict)
