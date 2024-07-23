@@ -65,7 +65,7 @@ def receive_loop_serial():
         packet = ser.readline()
         if not packet:
             break
-        if packet.startswith(b"[100][SERIAL OUTPUT] "):
+        if packet.startswith(b"[100][SERIAL OUTPUT]:"):
             packet_formatted = packet[23:-3]
             packet_dict = receive_message(packet_formatted)
             res = unpack_message(packet_dict)
