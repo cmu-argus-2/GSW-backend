@@ -66,7 +66,8 @@ def receive_loop_serial():
         if not packet:
             break
         if packet.startswith(b"[100][SERIAL OUTPUT]:"):
-            packet_formatted = packet[23:-3]
+            packet_dec = packet.decode('utf-8')
+            packet_formatted = packet_dec[23:]
             packet_dict = receive_message(packet_formatted)
             res = unpack_message(packet_dict)
             if res is not None:
@@ -94,9 +95,6 @@ def receive_loop_emulator():
                 packet = clientsocket.recv(256)
                 if not packet:
                     break
-                packet_enc = packet.decode('utf-8')
-                packet_formatted = packet_enc[23:]
-                print(packet_formatted)
                 packet_dict = receive_message(packet)
                 res = unpack_message(packet_dict)
                 if res is not None:
