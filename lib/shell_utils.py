@@ -65,7 +65,7 @@ def receive_loop_serial():
         packet = ser.readline()
         if not packet:
             break
-        if packet.startswith(b"b'[100][SERIAL OUTPUT]:"):
+        if packet.startswith(b"[100][SERIAL OUTPUT]:"):
             packet_dec = packet.decode('utf-8').strip()
             packet_formatted = packet_dec[23:-1]
             packet_bytes = bytearray.fromhex(packet_formatted)
