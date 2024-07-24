@@ -65,16 +65,15 @@ def receive_loop_serial():
         packet = ser.readline()
         if not packet:
             break
-        if packet.startswith(b"[100][SERIAL OUTPUT]:"):
-            packet_dec = packet.decode('utf-8')
-            packet_formatted = packet_dec[23:]
-            packet_b = packet_formatted.encode().decode('unicode_escape')
-            print(packet_b)
-            packet_dict = receive_message(packet_b)
+        if packet.startswith(b"b'[100][SERIAL OUTPUT]:"):
+            packet_dec = packet.decode('utf-8').strip()
+            packet_formatted = packet_dec[23:-1]
+            packet_bytes = bytearray.fromhex(packet_formatted)
+            packet_dict = receive_message(packet_bytes)
             res = unpack_message(packet_dict)
             if res is not None:
                 id, time, msg = res
-                # database.upload_data(id, time, msg)
+                database.upload_data(id, time, msg)
 
 
 def send_command_serial():
