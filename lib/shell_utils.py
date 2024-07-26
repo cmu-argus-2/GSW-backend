@@ -116,5 +116,6 @@ def receive_message(packet):
         ['message', 'header_to', 'header_from', 'header_id', 'header_flags', 'rssi', 'snr']
     )(message, header_to, header_from, header_id, header_flags, rssi, snr)
 
+
 def send_command_emulator():
     pass

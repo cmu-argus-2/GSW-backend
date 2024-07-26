@@ -4,19 +4,6 @@ from lib.shell_utils import (receive_loop, receive_loop_emulator,
                              receive_loop_serial, send_command,
                              send_command_emulator, send_command_serial)
 
-# radio = LoRa(0, 19, 25, modem_config=ModemConfig.Bw125Cr45Sf128, acks=False, freq=433)
-# radiohead = RadioHead(radio, 15)
-
-# database = Database()
-
-
-# def hard_exit(radio, signum, fram):
-#     radio.close()
-#     database.client.close()
-#     sys.exit(0)
-
-
-# signal.signal(signal.SIGINT, lambda signum, frame: hard_exit(radio, signum, frame))
 
 while True:
     connection_prompt = """
