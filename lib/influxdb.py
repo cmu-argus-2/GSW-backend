@@ -10,11 +10,12 @@ from lib.passwords import INFLUXDB_IP, INFLUXDB_ORGANIZATION, INFLUXDB_TOKEN
 
 
 class Database:
-    def __init__(self) -> None:
+    def __init__(self, bucket, point) -> None:
         self.client = influxdb_client.InfluxDBClient(url=INFLUXDB_IP,
                                                      token=INFLUXDB_TOKEN,
                                                      org=INFLUXDB_ORGANIZATION)
-        self.bucket = "heartbeats"
+        self.bucket = bucket
+        self.point = point
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
     def upload_data(self, type, t, data):
@@ -33,7 +34,7 @@ class Database:
             "y": sun_y,
             "z": sun_z,
         }
-        point = Point("argus-1").tag("heartbeat", "sun")
+        point = Point(self.point).tag("heartbeat", "sun")
         for key in upload:
             point.field(key, upload[key])
         try:
@@ -49,7 +50,7 @@ class Database:
             "current": current,
             "boot_counter": boot_count,
         }
-        point = Point("argus-1").tag("heartbeat", "battery")
+        point = Point(self.point).tag("heartbeat", "battery")
         for key in upload:
             point.field(key, upload[key])
         try:
@@ -69,7 +70,7 @@ class Database:
             "gyro_y": gyro_y,
             "gyro_z": gyro_z,
         }
-        point = Point("argus-1").tag("heartbeat", "imu")
+        point = Point(self.point).tag("heartbeat", "imu")
         for key in upload:
             point.field(key, upload[key])
         try:

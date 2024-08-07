@@ -4,7 +4,12 @@ from collections import namedtuple
 from enum import Enum
 from random import random
 
-import spidev
+try:
+    import spidev
+except ImportError:
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("could not import spidev, cannot connect to satellite via RF.")
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 from gpiozero import Button
 
 from lib.constants import Definitions
