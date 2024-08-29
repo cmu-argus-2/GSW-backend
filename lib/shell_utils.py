@@ -6,7 +6,7 @@ import socket
 from random import randint
 from collections import namedtuple
 
-from lib.database_utils import initialize_database
+# from lib.database_utils import initialize_database
 from lib.radio_utils import initialize_radio, unpack_message
 
 
@@ -27,7 +27,7 @@ def receive_loop():
 
     point_prompt = "Tag for stored data (leave blank for argus-1):"
     point = input(point_prompt) or "argus-1"
-    database = initialize_database("heartbeats", point)
+    # database = initialize_database("heartbeats", point)
 
     signal.signal(
         signal.SIGINT,
@@ -37,11 +37,12 @@ def receive_loop():
     while True:
         print("waiting for packet...")
         msg = radiohead.receive_message()
-        if msg is not None:
-            res = unpack_message(msg)
-            if res is not None:
-                id, time, data = res
-                database.upload_data(id, time, data)
+        print(msg)
+        # if msg is not None:
+        #     res = unpack_message(msg)
+            # if res is not None:
+            #     id, time, data = res
+            #     database.upload_data(id, time, data)
 
 
 def send_command():
