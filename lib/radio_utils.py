@@ -25,6 +25,8 @@ def unpack_message(msg):
     if(msg_ID == 0x01):
         TelemetryUnpacker.unpack_tm_frame(msg.message)
 
+    return msg_ID
+
 
 def initialize_radio() -> RadioHead:
     CHANNEL = 0

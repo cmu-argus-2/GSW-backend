@@ -15,7 +15,7 @@ class RadioHead:
 
     def send_message(self, data, header_to, with_ack, header_id=0, header_flags=0):
         self.tx_ctrl.on()
-        self.radio.set_mode_tx()
+        # self.radio.set_mode_tx()
         if with_ack:
             result = self.radio.send(data, header_to, header_id, header_flags)
         else:
