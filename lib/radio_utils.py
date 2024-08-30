@@ -2,6 +2,7 @@ import datetime
 
 from lib.argus_lora import LoRa, ModemConfig
 from lib.radiohead import RadioHead
+from lib.unpacking import TelemetryUnpacker
 
 
 def unpack_header(msg):
@@ -18,6 +19,11 @@ def unpack_message(msg):
     # Format the current time
     formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
     formatted_time = formatted_time.encode('utf-8')
+
+    msg_ID, msg_sc, msg_size = unpack_header(msg)
+
+    if(msg_ID == 0x01):
+        TelemetryUnpacker.unpack_tm_frame(msg.message)
 
 
 def initialize_radio() -> RadioHead:

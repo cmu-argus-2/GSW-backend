@@ -37,9 +37,9 @@ def receive_loop():
     while True:
         print("waiting for packet...")
         msg = radiohead.receive_message()
-        print(msg)
-        # if msg is not None:
-        #     res = unpack_message(msg)
+        
+        if msg is not None:
+            res = unpack_message(msg)
             # if res is not None:
             #     id, time, data = res
             #     database.upload_data(id, time, data)
