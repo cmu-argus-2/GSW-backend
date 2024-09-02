@@ -6,14 +6,15 @@ import socket
 from random import randint
 from collections import namedtuple
 
-# from lib.database_utils import initialize_database
+# from lib.database.database_utils import initialize_database
 from lib.groundstation import GS
 
 
 def hard_exit(radiohead, db, signum, frame):
-    print("hard exit")
+    print()
+    print("Received SIGINT: Hard exit")
     radiohead.radio.close()
-    db.client.close()
+    # db.client.close()
     sys.exit(0)
 
 
@@ -26,18 +27,24 @@ def receive_loop():
     point_prompt = "Tag for stored data (leave blank for argus-1):"
     point = input(point_prompt) or "argus-1"
     # database = initialize_database("heartbeats", point)
+    database = None
+
+    # Boolean, whether message was received or not 
+    msg_rx = False
 
     signal.signal(
         signal.SIGINT,
         lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame)
     )
 
+    # Superloop for SAT comms, all logic handled in groundstation class
     while True:
         print("Waiting for packet...")
         msg_rx = GS.receive()
 
         if(msg_rx == True):
             print("Requesting ID:", GS.rx_msg_id)
+            print()
             GS.transmit()
 
 
