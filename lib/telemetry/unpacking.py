@@ -41,7 +41,7 @@ class TelemetryUnpacker:
         # Sanity checks for message type and length
         if(self._msg_id != 0x01):
             raise RuntimeError("Message is not TM frame")
-        if(self._seq_cnt != 1):
+        if(self._seq_cnt != 0):
             raise RuntimeError("Message seq. count incorrect")
         if(self._size != 245):
             raise RuntimeError("Message length incorrect")

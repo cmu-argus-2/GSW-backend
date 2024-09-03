@@ -4,12 +4,18 @@ from lib.radio_utils import *
 from lib.telemetry.unpacking import TelemetryUnpacker
 
 class GS:
+    # Radio abstraction for GS
     radiohead = initialize_radio()
+
+    # RX message parameters
     rx_msg_id = 0x00
     rx_msg_sq = 0
     rx_msg_size = 0
-
     rx_message = []
+
+    # RQ message parameters
+    rq_msg_id = 0x01
+    rq_msg_sq = 0
 
     @classmethod
     def unpack_header(self):
@@ -31,6 +37,13 @@ class GS:
         if(self.rx_msg_id == 0x01):
             # Message is a heartbeat with TM frame, unpack
             TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+            self.rq_msg_id = 0x01
+            self.rq_msg_sq = 0
+
+        else:
+            # Unknown message ID, RQ heartbeat as a default 
+            self.rq_msg_id = 0x01
+            self.rq_msg_sq = 0
 
     @classmethod 
     def receive(self):
@@ -39,6 +52,9 @@ class GS:
         
         if rx_obj is not None:
             # Message from SAT
+            print("Message received with RSSI:", rx_obj.rssi)
+            print()
+
             self.rx_message = rx_obj.message
             self.unpack_message()
 
@@ -52,10 +68,12 @@ class GS:
     def transmit(self):
         # Transmit message through radiohead
         # TODO - Add class for message ID definitions 
-        tx_header = [0x08, 0x00, 0x01, 0x04]
-        tx_payload = [self.rx_msg_id, 0x01, 0x00, 0x01]
+        tx_header = bytes([0x08, 0x00, 0x00, 0x04])
+        tx_payload = (self.rx_msg_id.to_bytes(1, 'big') +
+                    self.rq_msg_id.to_bytes(1, 'big') +
+                    self.rq_msg_sq.to_bytes(2, 'big'))
 
-        tx_message = bytes(tx_header + tx_payload)
+        tx_message = tx_header + tx_payload
 
         # header_from and header_to set to 255
         self.radiohead.send_message(tx_message, 255, 1)
