@@ -53,7 +53,6 @@ class GS:
         if rx_obj is not None:
             # Message from SAT
             print("Message received with RSSI:", rx_obj.rssi)
-            print()
 
             self.rx_message = rx_obj.message
             self.unpack_message()
@@ -77,7 +76,3 @@ class GS:
 
         # header_from and header_to set to 255
         self.radiohead.send_message(tx_message, 255, 1)
-
-
-        
-

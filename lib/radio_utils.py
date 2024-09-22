@@ -5,7 +5,7 @@ from lib.radiohead import RadioHead
 def initialize_radio() -> RadioHead:
     CHANNEL = 0
     INTERRUPT = 19
-    ADDRESS = 25
+    ADDRESS = 255
     FREQUENCY = 915.6
     TX_POWER = 14
     MODEM_CONFIG = ModemConfig.Bw125Cr45Sf128
