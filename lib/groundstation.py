@@ -55,7 +55,7 @@ class GS:
             print("Message received with RSSI:", rx_obj.rssi)
 
             self.rx_message = rx_obj.message
-            self.unpack_message()
+            #self.unpack_message()
 
             return True
 
