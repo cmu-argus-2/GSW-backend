@@ -38,6 +38,5 @@ class RadioHead:
         return self.last_payload
 
     def on_recv(self, payload):
-        print("Packet received!")
         self.receive_success = True
         self.last_payload = payload

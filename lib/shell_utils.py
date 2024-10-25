@@ -43,7 +43,7 @@ def receive_loop():
         msg_rx = GS.receive()
 
         if(msg_rx == True):
-            print("Requesting ID:", GS.rx_msg_id)
+            print("Requesting ID:", GS.rq_msg_id)
             print()
             GS.transmit()
 
