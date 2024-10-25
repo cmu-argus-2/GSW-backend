@@ -144,9 +144,8 @@ class GS:
             # Message from SAT
             self.rx_message = rx_obj.message
             print("Message received with RSSI:", rx_obj.rssi)
-            print(self.rx_message)
-            
-            # self.unpack_message()
+
+            self.unpack_message()
 
             return True
 
