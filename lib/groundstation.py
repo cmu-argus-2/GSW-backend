@@ -92,7 +92,7 @@ class GS:
 
             print(f"File parameters: ID: {self.file_id}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
 
-            if(self.file_id == 0x00 and self.file_size == 0 and self.file_target_sq == 0):
+            if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
                 # No file on satellite
                 self.flag_rq_file = False
                 self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
@@ -112,6 +112,12 @@ class GS:
             if(self.gs_msg_sq != self.rx_msg_sq):
                 # Sequence count mismatch
                 print("ERROR: Sequence count mismatch")
+
+                # If rx_msg_sq > gs_msg_sq, missed packet
+                self.rq_msg_id = MSG_ID.SAT_FILE_PKT
+                self.rq_msg_sq = self.gs_msg_sq
+
+                return
 
             # Append packet to file_array
             self.file_array.append(self.rx_message[4:self.rx_msg_size + 4])
