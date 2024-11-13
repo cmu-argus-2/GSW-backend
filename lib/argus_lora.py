@@ -12,7 +12,7 @@ except ImportError:
     print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 from gpiozero import Button
 
-from lib.constants import Definitions
+from lib.pin_definitions import Definitions
 
 
 class ModemConfig(Enum):

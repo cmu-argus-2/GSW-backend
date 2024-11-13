@@ -8,30 +8,6 @@ class ModemConfig(Enum):
     Bw125Cr48Sf4096 = (0x78, 0xc4, 0x0c)
 
 
-class Message_IDS:
-    # Message ID definitions
-    SAT_HEARTBEAT_BATT = 0x00
-    SAT_HEARTBEAT_SUN = 0x01
-    SAT_HEARTBEAT_IMU = 0x02
-    SAT_HEARTBEAT_GPS = 0x03
-    SAT_HEARTBEAT_JETSON = 0x04
-
-    GS_ACK = 0x08
-    SAT_ACK = 0x09
-
-    GS_OTA_REQ = 0x14
-    SAT_OTA_RES = 0x15
-
-    SAT_IMG_INFO = 0x21
-    SAT_DEL_IMG = 0x22
-
-    GS_STOP = 0x30
-
-    SAT_IMG_CMD = 0x50
-
-    REQ_ACK_NUM = 0x80
-
-
 class Definitions:
     FLAGS_ACK = 0x80
     BROADCAST_ADDRESS = 255
