@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from lib.radio_utils import *
 from lib.telemetry.unpacking import TelemetryUnpacker
@@ -45,6 +46,9 @@ class GS:
     gs_msg_sq = 0
     file_array = []
 
+    # For packet timing tests
+    rx_time = time.monotonic()
+
     @classmethod
     def unpack_header(self):
         self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder='big')
@@ -88,9 +92,16 @@ class GS:
 
             print(f"File parameters: ID: {self.file_id}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
 
-            # Set RQ message parameters
-            self.rq_msg_id = MSG_ID.SAT_FILE_PKT
-            self.rq_msg_sq = 0
+            if(self.file_id == 0x00 and self.file_size == 0 and self.file_target_sq == 0):
+                # No file on satellite
+                self.flag_rq_file = False
+                self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
+                self.rq_msg_sq = 0
+
+            else:
+                # Set RQ message parameters
+                self.rq_msg_id = MSG_ID.SAT_FILE_PKT
+                self.rq_msg_sq = 0
 
         elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
             # Message is file packet
@@ -111,7 +122,7 @@ class GS:
             # Compare gs_msg_sq to file_target_sq
             if(self.gs_msg_sq == self.file_target_sq):
                 # Write file to memory
-                filename = 'shrek_wasowski.jpg'
+                filename = 'test_image.png'
                 write_bytes = open(filename, 'wb')
 
                 for i in range(self.file_target_sq):
@@ -139,11 +150,12 @@ class GS:
     def receive(self):
         # Receive message from radiohead
         rx_obj = self.radiohead.receive_message()
-        
+
         if rx_obj is not None:
             # Message from SAT
             self.rx_message = rx_obj.message
-            print("Message received with RSSI:", rx_obj.rssi)
+            print(f"Message received with RSSI: {rx_obj.rssi} at time {time.monotonic() - self.rx_time}")
+            self.rx_time = time.monotonic()
 
             self.unpack_message()
 
