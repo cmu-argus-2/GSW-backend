@@ -128,7 +128,7 @@ class GS:
             # Compare gs_msg_sq to file_target_sq
             if(self.gs_msg_sq == self.file_target_sq):
                 # Write file to memory
-                filename = 'test_image.png'
+                filename = 'test_image.jpg'
                 write_bytes = open(filename, 'wb')
 
                 for i in range(self.file_target_sq):
