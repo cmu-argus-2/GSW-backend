@@ -122,6 +122,7 @@ class LoRa(object):
         if self._mode != Definitions.MODE_TX:
             self._spi_write(Definitions.REG_01_OP_MODE, Definitions.MODE_TX)
             self._spi_write(Definitions.REG_40_DIO_MAPPING1, 0x40)  # Interrupt on TxDone
+            time.sleep(0.1)
             self._mode = Definitions.MODE_TX
 
     def set_mode_rx(self):

@@ -1,6 +1,8 @@
 import datetime
 import time
 
+import RPi.GPIO as GPIO
+
 from lib.radio_utils import *
 from lib.telemetry.unpacking import TelemetryUnpacker
 
@@ -22,6 +24,18 @@ class MSG_ID:
 class GS:
     # Radio abstraction for GS
     radiohead = initialize_radio()
+
+    # Initialize GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(22, GPIO.OUT)  # RX control pin
+    GPIO.setup(23, GPIO.OUT)  # TX control pin
+
+    rx_ctrl = 22  # GPIO pin number for rx_ctrl
+    tx_ctrl = 23  # GPIO pin number for tx_ctrl
+
+    # Ensure pins are off initially
+    GPIO.output(rx_ctrl, GPIO.LOW)
+    GPIO.output(tx_ctrl, GPIO.LOW)
     
     #State ground station
     state = GS_COMMS_STATE.RX
@@ -154,8 +168,12 @@ class GS:
 
     @classmethod 
     def receive(self):
+        GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+
         # Receive message from radiohead
         rx_obj = self.radiohead.receive_message()
+
+        GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
 
         if rx_obj is not None:
             # Message from SAT
@@ -174,8 +192,9 @@ class GS:
     @classmethod 
     def transmit(self):
         # Transmit message through radiohead
-        # TODO - Add class for message ID definitions 
-        tx_header = bytes([0x08, 0x00, 0x00, 0x04])
+        GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
+
+        tx_header = bytes([MSG_ID.GS_ACK, 0x00, 0x00, 0x04])
         tx_payload = (self.rx_msg_id.to_bytes(1, 'big') +
                     self.rq_msg_id.to_bytes(1, 'big') +
                     self.rq_msg_sq.to_bytes(2, 'big'))
@@ -184,3 +203,5 @@ class GS:
 
         # header_from and header_to set to 255
         self.radiohead.send_message(tx_message, 255, 1)
+
+        GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off

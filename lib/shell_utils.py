@@ -8,12 +8,14 @@ from collections import namedtuple
 
 # from lib.database.database_utils import initialize_database
 from lib.groundstation import GS
+import RPi.GPIO as GPIO
 
 
 def hard_exit(radiohead, db, signum, frame):
     print()
     print("Received SIGINT: Hard exit")
     radiohead.radio.close()
+    GPIO.cleanup()
     # db.client.close()
     sys.exit(0)
 
