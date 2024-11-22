@@ -115,11 +115,11 @@ class GS:
             else:
                 # Set RQ message parameters
                 self.rq_msg_id = MSG_ID.SAT_FILE_PKT
-                self.rq_msg_sq = 0
+                self.rq_msg_sq = self.gs_msg_sq
 
         elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
             # Message is file packet
-            print(f"Received file packet {self.gs_msg_sq}")
+            print(f"Received file packet {self.rx_msg_sq}")
             print(self.rx_message[4:self.rx_msg_size + 4])
 
             # Check internal gs_msg_sq against rx_msg_sq
@@ -142,7 +142,7 @@ class GS:
             # Compare gs_msg_sq to file_target_sq
             if(self.gs_msg_sq == self.file_target_sq):
                 # Write file to memory
-                filename = 'test_image.jpg'
+                filename = 'test_image.png'
                 write_bytes = open(filename, 'wb')
 
                 for i in range(self.file_target_sq):

@@ -7,7 +7,7 @@ def initialize_radio() -> RadioHead:
     INTERRUPT = 19
     ADDRESS = 255
     FREQUENCY = 915.6
-    TX_POWER = 14
+    TX_POWER = 18
     MODEM_CONFIG = ModemConfig.Bw125Cr45Sf128
     RECEIVE_ALL = False
     ACKS = False
