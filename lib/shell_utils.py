@@ -60,13 +60,13 @@ def receive_loop_serial():
         database.client.close()
         sys.exit(0)
 
-    signal.signal(
-        signal.SIGINT,
-        lambda signum, frame: ser_exit(ser, database, signum, frame)
-    )
+    # signal.signal(
+    #     signal.SIGINT,
+    #     lambda signum, frame: ser_exit(ser, database, signum, frame)
+    # )
     # the serial port to listen on
     ser = serial.Serial('/dev/ttyACM0')
-    database = initialize_database('heartbeats', "serial")
+    # database = initialize_database('heartbeats', "serial")
     while True:
         packet = ser.readline()
         if not packet:
@@ -76,10 +76,11 @@ def receive_loop_serial():
             packet_formatted = packet_dec[23:-1]
             packet_bytes = bytearray.fromhex(packet_formatted)
             packet_dict = receive_message(packet_bytes)
-            res = unpack_message(packet_dict)
+            # res = unpack_message(packet_dict)
+            res = None
             if res is not None:
                 id, time, msg = res
-                database.upload_data(id, time, msg)
+                # database.upload_data(id, time, msg)
 
 
 def send_command_serial():
@@ -91,7 +92,7 @@ def receive_loop_emulator():
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.bind((socket.gethostname(), 5500))
 
-    database = initialize_database('heartbeats', "emulator")
+    # database = initialize_database('heartbeats', "emulator")
 
     while True:
         serversocket.listen()
@@ -103,10 +104,11 @@ def receive_loop_emulator():
                 if not packet:
                     break
                 packet_dict = receive_message(packet)
-                res = unpack_message(packet_dict)
+                # res = unpack_message(packet_dict)
+                res = None
                 if res is not None:
                     id, time, data = res
-                    database.upload_data(id, time, data)
+                    # database.upload_data(id, time, data)
 
 
 def receive_message(packet):
