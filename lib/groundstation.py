@@ -13,12 +13,37 @@ class GS_COMMS_STATE:
     RQ_METADATA = 0X02
     RQ_FILE_PKT = 0X03
 
+# Message ID database for communication protocol
 class MSG_ID:
+    """
+    Comms message IDs that are downlinked during the mission
+    """
+
+    # SAT heartbeat, nominally downlinked in orbit
     SAT_HEARTBEAT = 0x01
-    GS_ACK = 0x08
-    SAT_ACK = 0x09
+
+    # SAT TM frames, requested by GS
+    SAT_TM_HAL = 0x02
+    SAT_TM_STORAGE = 0x03
+    SAT_TM_PAYLOAD = 0x04
+
+    # SAT ACK, in response to GS commands
+    SAT_ACK = 0x0F
+
+    # SAT file metadata and file content messages
     SAT_FILE_METADATA = 0x10
     SAT_FILE_PKT = 0x20
+
+    """
+    GS commands to be uplinked to Argus
+    """
+
+    # GS commands SC responds to with an ACK
+    GS_CMD_FORCE_REBOOT = 0x40
+    GS_CMD_SWITCH_TO_STATE = 0x41
+
+    # GS commands SC responds to with a frame
+    GS_CMD_REQUEST_TM_HEARTBEAT = 0x46
 
 
 class GS:
@@ -46,9 +71,11 @@ class GS:
     rx_msg_size = 0
     rx_message = []
 
-    # RQ message parameters
-    rq_msg_id = 0x01
-    rq_msg_sq = 0
+    # RQ message parameters for commanding SC
+    rq_cmd = 0x01
+    rq_sq = 0
+    rq_len = 0
+    payload = []
 
     # File metadata parameters
     file_id = 0x00
@@ -80,90 +107,40 @@ class GS:
         # Unpack RX message header
         self.unpack_header()
 
-        # TODO: GS state machine for downlinking a file
+        # TODO: Command queue
+        # Get most recent command from queue and execute
         if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
-            # Message is a heartbeat with TM frame, unpack
-            TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+            # TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+            print("SC sent a heartbeat!")
 
-            if(self.flag_rq_file == True):
-                # Set RQ message parameters
-                self.rq_msg_id = MSG_ID.SAT_FILE_METADATA
-                self.rq_msg_sq = 0
-            
-            else:
-                # Set RQ message parameters
-                self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
-                self.rq_msg_sq = 0
+            # Set RQ message parameters
+            self.rq_cmd = MSG_ID.GS_CMD_SWITCH_TO_STATE
+            self.rq_sq = 0
+            self.rq_len = 5
 
-        elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
-            # Message is file metadata
-            print("Received file metadata")
+            # Temporary hardcoding for GS_CMD_SWITCH_TO_STATE
+            self.payload = ((0x01).to_bytes(1, 'big') + (20).to_bytes(4, 'big'))
 
-            # Unpack file parameters
-            self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder='big')
-            self.file_size = int.from_bytes((self.rx_message[5:9]), byteorder='big')
-            self.file_target_sq = int.from_bytes((self.rx_message[9:11]), byteorder='big')
+        elif (self.rx_msg_id == MSG_ID.SAT_ACK):
+            print("SC ACK'd the request")
+            print(self.rx_message)
 
-            print(f"File parameters: ID: {self.file_id}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
+            # Set RQ message parameters
+            self.rq_cmd = MSG_ID.GS_CMD_FORCE_REBOOT
+            self.rq_sq = 0
+            self.rq_len = 0
 
-            if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
-                # No file on satellite
-                self.flag_rq_file = False
-                self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
-                self.rq_msg_sq = 0
-
-            else:
-                # Set RQ message parameters
-                self.rq_msg_id = MSG_ID.SAT_FILE_PKT
-                self.rq_msg_sq = self.gs_msg_sq
-
-        elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
-            # Message is file packet
-            print(f"Received file packet {self.rx_msg_sq}")
-            print(self.rx_message[4:self.rx_msg_size + 4])
-
-            # Check internal gs_msg_sq against rx_msg_sq
-            if(self.gs_msg_sq != self.rx_msg_sq):
-                # Sequence count mismatch
-                print("ERROR: Sequence count mismatch")
-
-                # If rx_msg_sq > gs_msg_sq, missed packet
-                self.rq_msg_id = MSG_ID.SAT_FILE_PKT
-                self.rq_msg_sq = self.gs_msg_sq
-
-                return
-
-            # Append packet to file_array
-            self.file_array.append(self.rx_message[4:self.rx_msg_size + 4])
-
-            # Increment sequence counter
-            self.gs_msg_sq += 1
-
-            # Compare gs_msg_sq to file_target_sq
-            if(self.gs_msg_sq == self.file_target_sq):
-                # Write file to memory
-                filename = 'test_image.png'
-                write_bytes = open(filename, 'wb')
-
-                for i in range(self.file_target_sq):
-                    write_bytes.write(self.file_array[i])
-                
-                self.flag_rq_file = False
-                write_bytes.close()
-
-                # Set RQ message parameters
-                self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
-                self.rq_msg_sq = 0
-            
-            else:
-                # Set RQ message parameters
-                self.rq_msg_id = MSG_ID.SAT_FILE_PKT
-                self.rq_msg_sq = self.gs_msg_sq
+            # No payload for this command
+            self.payload = bytearray()
             
         else:
-            # Unknown message ID, RQ heartbeat as a default 
-            self.rq_msg_id = MSG_ID.SAT_HEARTBEAT
-            self.rq_msg_sq = 0
+            # Unknown message ID, RQ heartbeat as a default
+            print(self.rx_message)
+
+            # Set RQ message parameters
+            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+            self.rq_sq = 0
+            self.rq_len = 0
 
 
     @classmethod 
@@ -194,12 +171,11 @@ class GS:
         # Transmit message through radiohead
         GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-        tx_header = bytes([MSG_ID.GS_ACK, 0x00, 0x00, 0x04])
-        tx_payload = (self.rx_msg_id.to_bytes(1, 'big') +
-                    self.rq_msg_id.to_bytes(1, 'big') +
-                    self.rq_msg_sq.to_bytes(2, 'big'))
+        tx_header = (self.rq_cmd.to_bytes(1, 'big') +
+                    self.rq_sq.to_bytes(2, 'big') +
+                    self.rq_len.to_bytes(1, 'big'))
 
-        tx_message = tx_header + tx_payload
+        tx_message = tx_header + self.payload
 
         # header_from and header_to set to 255
         self.radiohead.send_message(tx_message, 255, 1)
