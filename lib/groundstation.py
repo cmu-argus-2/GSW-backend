@@ -110,8 +110,7 @@ class GS:
         # TODO: Command queue
         # Get most recent command from queue and execute
         if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
-            # TelemetryUnpacker.unpack_tm_frame(self.rx_message)
-            print("SC sent a heartbeat!")
+            TelemetryUnpacker.unpack_tm_frame(self.rx_message)
 
             # Set RQ message parameters
             self.rq_cmd = MSG_ID.GS_CMD_SWITCH_TO_STATE
@@ -122,11 +121,10 @@ class GS:
             self.payload = ((0x01).to_bytes(1, 'big') + (20).to_bytes(4, 'big'))
 
         elif (self.rx_msg_id == MSG_ID.SAT_ACK):
-            print("SC ACK'd the request")
             print(self.rx_message)
 
             # Set RQ message parameters
-            self.rq_cmd = MSG_ID.GS_CMD_FORCE_REBOOT
+            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
             self.rq_sq = 0
             self.rq_len = 0
 
