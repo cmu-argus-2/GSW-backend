@@ -73,7 +73,9 @@ def convert_float_to_fixed_point_hp(val):
     val_int_byte = (val_int & 0x7F) | (neg_bit_flag << 7)
 
     # Pack into message list
-    message_list = bytearray([val_int_byte, (val_dec >> 16) & 0xFF, (val_dec >> 8) & 0xFF, val_dec & 0xFF])
+    message_list = bytearray(
+        [val_int_byte, (val_dec >> 16) & 0xFF, (val_dec >> 8) & 0xFF, val_dec & 0xFF]
+    )
 
     return message_list
 
@@ -109,7 +111,14 @@ def pack_unsigned_long_int(data, idx):
     :param idx: Index of the integer in the data list to pack.
     :return: List of 4 bytes representing the packed 4-byte integer.
     """
-    return bytearray([(data[idx] >> 24) & 0xFF, (data[idx] >> 16) & 0xFF, (data[idx] >> 8) & 0xFF, data[idx] & 0xFF])
+    return bytearray(
+        [
+            (data[idx] >> 24) & 0xFF,
+            (data[idx] >> 16) & 0xFF,
+            (data[idx] >> 8) & 0xFF,
+            data[idx] & 0xFF,
+        ]
+    )
 
 
 def pack_signed_long_int(data, idx):
@@ -122,7 +131,9 @@ def pack_signed_long_int(data, idx):
     """
     # Handle signed integers by converting to unsigned before packing
     val = data[idx] & 0xFFFFFFFF
-    return bytearray([(val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF])
+    return bytearray(
+        [(val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF]
+    )
 
 
 def unpack_signed_long_int(byte_list):
@@ -133,7 +144,9 @@ def unpack_signed_long_int(byte_list):
     :return: Unpacked signed 4-byte integer.
     """
     # Combine the bytes into a 32-bit signed integer
-    val = (byte_list[0] << 24) | (byte_list[1] << 16) | (byte_list[2] << 8) | byte_list[3]
+    val = (
+        (byte_list[0] << 24) | (byte_list[1] << 16) | (byte_list[2] << 8) | byte_list[3]
+    )
 
     # Convert to signed integer if the sign bit (MSB) is set
     return val if val < 0x80000000 else val - 0x100000000
@@ -147,7 +160,9 @@ def unpack_unsigned_long_int(byte_list):
     :return: Unpacked unsigned 4-byte integer.
     """
     # Combine the bytes into a 32-bit unsigned integer
-    return (byte_list[0] << 24) | (byte_list[1] << 16) | (byte_list[2] << 8) | byte_list[3]
+    return (
+        (byte_list[0] << 24) | (byte_list[1] << 16) | (byte_list[2] << 8) | byte_list[3]
+    )
 
 
 def pack_unsigned_short_int(data, idx):

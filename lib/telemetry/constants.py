@@ -1,8 +1,10 @@
 # Index constants for accessing data in the Data Handler
 
+
 def const(val):
     # Mock for uPy mock
     return val
+
 
 class CDH_IDX:
     TIME = const(0)

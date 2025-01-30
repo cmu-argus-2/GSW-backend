@@ -1,4 +1,5 @@
 import mysql.connector
+
 from lib.constants import Message_IDS
 from lib.passwords import DB_IP, DB_USER
 
@@ -49,8 +50,7 @@ class Database:
             print(f"[ERROR]: Could not upload battery heartbeat: {e}")
 
     def upload_imu(self, time, data):
-        (mag_x, mag_y, mag_z,
-         gyro_x, gyro_y, gyro_z) = data
+        (mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z) = data
         upload = (time, mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z)
         sql = "INSERT INTO imu (time, mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         try:

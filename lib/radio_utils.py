@@ -23,7 +23,8 @@ def initialize_radio() -> RadioHead:
         tx_power=TX_POWER,
         receive_all=RECEIVE_ALL,
         acks=ACKS,
-        crypto=CRYTPO)
+        crypto=CRYTPO,
+    )
 
     # RadioHead wrapper class that overwrites on_recv and adds a receive method
     radiohead = RadioHead(radio, 15)

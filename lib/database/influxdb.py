@@ -11,9 +11,9 @@ from lib.passwords import INFLUXDB_IP, INFLUXDB_ORGANIZATION, INFLUXDB_TOKEN
 
 class Database:
     def __init__(self, bucket, point) -> None:
-        self.client = influxdb_client.InfluxDBClient(url=INFLUXDB_IP,
-                                                     token=INFLUXDB_TOKEN,
-                                                     org=INFLUXDB_ORGANIZATION)
+        self.client = influxdb_client.InfluxDBClient(
+            url=INFLUXDB_IP, token=INFLUXDB_TOKEN, org=INFLUXDB_ORGANIZATION
+        )
         self.bucket = bucket
         self.point = point
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
@@ -38,7 +38,9 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
+            self.write_api.write(
+                bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point
+            )
         except Exception as e:
             print(f"could not upload sun heartbeat: {e}")
 
@@ -54,13 +56,14 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
+            self.write_api.write(
+                bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point
+            )
         except Exception as e:
             print(f"Could not upload battery heartbeat: {e}")
 
     def upload_imu(self, time, data):
-        (mag_x, mag_y, mag_z,
-         gyro_x, gyro_y, gyro_z) = data
+        (mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z) = data
         upload = {
             "sat_time": time,
             "mag_x": mag_x,
@@ -74,6 +77,8 @@ class Database:
         for key in upload:
             point.field(key, upload[key])
         try:
-            self.write_api.write(bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point)
+            self.write_api.write(
+                bucket=self.bucket, org=INFLUXDB_ORGANIZATION, record=point
+            )
         except Exception as e:
             print(f"Could not upload imu heartbeat: {e}")

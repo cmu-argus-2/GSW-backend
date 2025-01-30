@@ -1,14 +1,14 @@
 import signal
-import sys
-
-import serial
 import socket
-from random import randint
+import sys
 from collections import namedtuple
+from random import randint
+
+import RPi.GPIO as GPIO
+import serial
 
 # from lib.database.database_utils import initialize_database
 from lib.groundstation import GS
-import RPi.GPIO as GPIO
 
 
 def hard_exit(radiohead, db, signum, frame):
@@ -31,12 +31,12 @@ def receive_loop():
     # database = initialize_database("heartbeats", point)
     database = None
 
-    # Boolean, whether message was received or not 
+    # Boolean, whether message was received or not
     msg_rx = False
 
     signal.signal(
         signal.SIGINT,
-        lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame)
+        lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame),
     )
 
     # Superloop for SAT comms, all logic handled in groundstation class
@@ -44,7 +44,7 @@ def receive_loop():
         print("Waiting for packet...")
         msg_rx = GS.receive()
 
-        if(msg_rx == True):
+        if msg_rx == True:
             print("Requesting ID:", GS.rq_cmd, "SQ:", GS.rq_sq)
             print()
             GS.transmit()
@@ -65,14 +65,14 @@ def receive_loop_serial():
     #     lambda signum, frame: ser_exit(ser, database, signum, frame)
     # )
     # the serial port to listen on
-    ser = serial.Serial('/dev/ttyACM0')
+    ser = serial.Serial("/dev/ttyACM0")
     # database = initialize_database('heartbeats', "serial")
     while True:
         packet = ser.readline()
         if not packet:
             break
         if packet.startswith(b"[100][SERIAL OUTPUT]:"):
-            packet_dec = packet.decode('utf-8').strip()
+            packet_dec = packet.decode("utf-8").strip()
             packet_formatted = packet_dec[23:-1]
             packet_bytes = bytearray.fromhex(packet_formatted)
             packet_dict = receive_message(packet_bytes)
@@ -116,12 +116,20 @@ def receive_message(packet):
     header_from = packet[1]
     header_id = packet[2]
     header_flags = packet[3]
-    message = bytes(packet[4:]) if len(packet) > 4 else b''
+    message = bytes(packet[4:]) if len(packet) > 4 else b""
     rssi = randint(20, 120)
     snr = randint(0, 300)
     return namedtuple(
         "Payload",
-        ['message', 'header_to', 'header_from', 'header_id', 'header_flags', 'rssi', 'snr']
+        [
+            "message",
+            "header_to",
+            "header_from",
+            "header_id",
+            "header_flags",
+            "rssi",
+            "snr",
+        ],
     )(message, header_to, header_from, header_id, header_flags, rssi, snr)
 
 
