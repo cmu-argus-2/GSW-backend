@@ -84,7 +84,7 @@ class FIFOQueue:
 queue = FIFOQueue()
 #TODO: Fill in with actual commands 
 queue.enqueue(0x46)
-# queue.enqueue(0x4A) #no ft
+queue.enqueue(0x4A)
 queue.enqueue(0x46)
 # queue.enqueue(0x4B)
 
@@ -128,7 +128,7 @@ class GS:
     file_time = 1738351687
     file_size = 0x00
     file_target_sq = 0x00 #maximum sq count (240 bytes) --> error checking 
-    flag_rq_file = True #testing in the lab - once the image is received 
+    flag_rq_file = False #testing in the lab - once the image is received 
 
     # File TX parameters
     gs_msg_sq = 0 #if file is multiple packets - number of packets received 
@@ -158,16 +158,42 @@ class GS:
     #TODO: Replace with actual database 
     @classmethod 
     def database_readwrite(self): 
-        if self.state == GS_COMMS_STATE.DB_RW: 
-            queue.enqueue(self.rx_msg_id)
-            print ("Enq:", self.rx_msg_id)
+        if self.state == GS_COMMS_STATE.DB_RW:
+            # TODO: Separate queue for RX and RQ
+            # queue.enqueue(self.rx_msg_id)
+            print ("Received:", self.rx_msg_id)
 
-            if queue.is_empty(): 
-                self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-            else: 
-                self.rq_cmd = queue.dequeue()
+            # Check if we need to start file transfer sequence
+            if(self.rx_msg_id == MSG_ID.GS_CMD_FILE_METADATA):
+                # Check if file metadata was valid
+                # TODO: Better error checking
+                if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
+                    # No file on satellite
+                    self.flag_rq_file = False
+
+                    # Dequeue the next command
+                    # TODO: Check if queue has a valid message ID
+                    if queue.is_empty(): 
+                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    else: 
+                        self.rq_cmd = queue.dequeue()
+
+                else:
+                    # Valid file on satellite
+                    self.flag_rq_file = True
+                    self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
+
+            else:
+                # Dequeue the next command
+                # TODO: Check if queue has a valid message ID
+                if queue.is_empty(): 
+                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                else: 
+                    self.rq_cmd = queue.dequeue()
+
             print ("Deq:", self.rq_cmd)
             self.state = GS_COMMS_STATE.TX
+
         else: 
             self.state = GS_COMMS_STATE.RX
 
@@ -190,7 +216,6 @@ class GS:
             self.rx_time = time.monotonic()
 
             self.unpack_message()
-
 
             if self.state == GS_COMMS_STATE.RX: 
                 print ("RX state")
@@ -224,18 +249,45 @@ class GS:
                         # Sequence count mismatch
                         print("ERROR: Sequence count mismatch")
 
-                    self.state = GS_COMMS_STATE.DB_RW
+                    else:
+                        # Append packet to file_array
+                        self.file_array.append(self.rx_message[9:self.rx_msg_size + 9])
+                        # Increment sequence counter
+                        self.gs_msg_sq += 1
+
+                    # Compare gs_msg_sq to file_target_sq
+                    if(self.gs_msg_sq == self.file_target_sq):
+                        # Write file to memory
+                        filename = 'test_image.jpg'
+                        write_bytes = open(filename, 'wb')
+
+                        # Write all bytes to the file
+                        for i in range(self.file_target_sq):
+                            write_bytes.write(self.file_array[i])
+
+                        # Close file
+                        write_bytes.close()
+                        
+                        # Set flag
+                        self.flag_rq_file = False
+
+                    # Transition based on flag
+                    if self.flag_rq_file == True:
+                        self.state = GS_COMMS_STATE.TX
+                    else:
+                        self.state = GS_COMMS_STATE.DB_RW
                 
                 elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
-                    print (f'Received an ACK')
+                    print (f'Received an ACK {self.rx_message}')
                     self.state = GS_COMMS_STATE.DB_RW
 
-                    
                 else: 
-                    #self loop 
-                    self.state = GS_COMMS_STATE.RX 
+                    # Invalid RX message ID
+                    print (f'Received invalid message ID {self.rx_msg_id}')
+                    self.state = GS_COMMS_STATE.RX
 
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
+
             #TODO: Check logic 
             return True
         
@@ -251,95 +303,29 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-
-
             if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA): #rq_cmd
-                if(self.flag_rq_file == True):
-                    # Set RQ message parameters for MD request
-                    # self.rq_cmd = MSG_ID.GS_CMD_FILE_METADATA
-                    self.rq_sq = 0
-                    self.rq_len = 5
-                    self.payload = (self.file_id.to_bytes(1, 'big') +
-                                    self.file_time.to_bytes(4, 'big'))
-                
-                else:
-                    # Set RQ message parameters for HB request
-                    # self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    self.rq_sq = 0
-                    self.rq_len = 0
-                    self.payload = bytearray()
+                # Set RQ message parameters for MD request
+                # self.rq_cmd = MSG_ID.GS_CMD_FILE_METADATA
+                self.rq_sq = 0
+                self.rq_len = 5
+                self.payload = (self.file_id.to_bytes(1, 'big') +
+                                self.file_time.to_bytes(4, 'big'))
 
-                
             elif (self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
-                # TODO: Better error checking
-                if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
-                    # No file on satellite
-                    self.flag_rq_file = False
-
-                    # Set RQ message parameters for HB request
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    self.rq_sq = 0
-                    self.rq_len = 0
-                    self.payload = bytearray()
-
-                else:
-                    # Set RQ message parameters for PKT
-                    self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
-                    self.rq_sq = self.gs_msg_sq
-                    self.rq_len = 7
-                    self.payload = (self.file_id.to_bytes(1, 'big') +
-                                    self.file_time.to_bytes(4, 'big') + 
-                                    self.rq_sq.to_bytes(2, 'big'))
-
-            elif(self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
-                # TODO: Check for file ID and file time
                 # Set RQ message parameters for PKT
-                self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
+                # self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
                 self.rq_sq = self.gs_msg_sq
                 self.rq_len = 7
                 self.payload = (self.file_id.to_bytes(1, 'big') +
                                 self.file_time.to_bytes(4, 'big') + 
                                 self.rq_sq.to_bytes(2, 'big'))
-                
-                # Append packet to file_array
-                self.file_array.append(self.rx_message[9:self.rx_msg_size + 9])
 
-                # Increment sequence counter
-                self.gs_msg_sq += 1
-
-                # Compare gs_msg_sq to file_target_sq
-                if(self.gs_msg_sq == self.file_target_sq):
-                    # Write file to memory
-                    filename = 'test_image.jpg'
-                    write_bytes = open(filename, 'wb')
-
-                    for i in range(self.file_target_sq):
-                        write_bytes.write(self.file_array[i])
-                    
-                    self.flag_rq_file = False
-                    write_bytes.close()
-
-                    # Set RQ message parameters for HB request
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    self.rq_sq = 0
-                    self.rq_len = 0
-                    self.payload = bytearray()
-                
-                else:
-                    # Set RQ message parameters for PKT
-                    self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
-                    self.rq_sq = self.gs_msg_sq
-                    self.rq_len = 7
-                    self.payload = (self.file_id.to_bytes(1, 'big') +
-                                    self.file_time.to_bytes(4, 'big') + 
-                                    self.rq_sq.to_bytes(2, 'big'))
             else:
                 # Set RQ message parameters for HB request
                 self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
-
 
             tx_header = (self.rq_cmd.to_bytes(1, 'big') +
                         self.rq_sq.to_bytes(2, 'big') +
@@ -349,9 +335,11 @@ class GS:
 
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
+
             # TODO: Check logic
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
+
         else: 
             print ("GS not in TX state, : It is in", self.state)
             self.state = GS_COMMS_STATE.RX
