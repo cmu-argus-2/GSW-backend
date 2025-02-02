@@ -9,9 +9,9 @@ from lib.telemetry.unpacking import TelemetryUnpacker
 
 ''' 
 TODOs: 
-- Needs thorough testing (has many bugs!!)
-- Read database and write database function - Error in TX-->DB_RW transition
+- Read database and write database function
 - Check state transitions 
+- Can we start in DB_RW instead - if nothing in queue, we request for HB?
 '''
 
 
@@ -20,10 +20,6 @@ class GS_COMMS_STATE:
     RX = 0x00
     TX = 0X01
     DB_RW = 0X02
-    # RQ_HEARTBEAT = 0X00
-    # RX = 0X01
-    # RQ_METADATA = 0X02
-    # RQ_FILE_PKT = 0X03
 
 # Message ID database for communication protocol
 class MSG_ID:
@@ -196,17 +192,12 @@ class GS:
                     self.rq_cmd = queue.dequeue()
 
             print ("Deq:", self.rq_cmd)
-            print ("****  DB_RW --> TX ****")
+            print ("**** DB_RW --> TX ****")
             self.state = GS_COMMS_STATE.TX
 
         else: 
             print ("**** DB_RW --> RX ****")
             self.state = GS_COMMS_STATE.RX
-
-
-    # all unique message ids --> one function --> actual unpacking with 
-    # telemetryUnpacker 
-
 
     @classmethod 
     def receive(self):
@@ -304,6 +295,8 @@ class GS:
         
         else: 
             # No message from SAT
+            print ("**** Nothing Received. RX --> DB_RW [for default HB] ****")
+            self.state = GS_COMMS_STATE.DB_RW
             return False
 
 
