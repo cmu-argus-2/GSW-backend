@@ -158,7 +158,7 @@ class GS:
     #TODO: Replace with actual database 
     @classmethod 
     def database_readwrite(self, gls): 
-        if gls.state == GS_COMMS_STATE.DB_RW: 
+        if self.state == GS_COMMS_STATE.DB_RW: 
             queue.enqueue(self.rx_msg_id)
             print ("Enq:", self.rx_msg_id)
 
@@ -167,9 +167,9 @@ class GS:
             else: 
                 self.rq_cmd = queue.dequeue()
             print ("Deq:", self.rq_cmd)
-            gls.state = GS_COMMS_STATE.TX
+            self.state = GS_COMMS_STATE.TX
         else: 
-            gls.state = GS_COMMS_STATE.RX
+            self.state = GS_COMMS_STATE.RX
 
 
     # all unique message ids --> one function --> actual unpacking with 
@@ -192,13 +192,13 @@ class GS:
             self.unpack_message()
 
 
-            if gls.state == GS_COMMS_STATE.RX: 
+            if self.state == GS_COMMS_STATE.RX: 
                 print ("RX state")
                 #If Heartbeat
                 if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
                     # Message is a heartbeat with TM frame, unpack
                     TelemetryUnpacker.unpack_tm_frame(self.rx_message)
-                    gls.state = GS_COMMS_STATE.DB_RW
+                    self.state = GS_COMMS_STATE.DB_RW
                 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
                     # Message is file metadata
@@ -211,7 +211,7 @@ class GS:
                     self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
 
                     print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
-                    gls.state = GS_COMMS_STATE.DB_RW
+                    self.state = GS_COMMS_STATE.DB_RW
 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
                     # TODO: Check for file ID and file time
@@ -224,16 +224,16 @@ class GS:
                         # Sequence count mismatch
                         print("ERROR: Sequence count mismatch")
 
-                    gls.state = GS_COMMS_STATE.DB_RW
+                    self.state = GS_COMMS_STATE.DB_RW
                 
                 elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
                     print (f'Received an ACK')
-                    gls.state = GS_COMMS_STATE.DB_RW
+                    self.state = GS_COMMS_STATE.DB_RW
 
                     
                 else: 
                     #self loop 
-                    gls.state = GS_COMMS_STATE.RX 
+                    self.state = GS_COMMS_STATE.RX 
 
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
             #TODO: Check logic 
@@ -247,7 +247,7 @@ class GS:
     
     @classmethod 
     def transmit(self, gls):
-        if gls.state == GS_COMMS_STATE.TX: 
+        if self.state == GS_COMMS_STATE.TX: 
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
@@ -349,11 +349,11 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
             # TODO: Check logic
-            gls.state = GS_COMMS_STATE.RX
+            self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
         else: 
-            print ("GS not in TX state, : It is in", gls.state)
-            gls.state = GS_COMMS_STATE.RX
+            print ("GS not in TX state, : It is in", self.state)
+            self.state = GS_COMMS_STATE.RX
 
 
         
