@@ -86,7 +86,7 @@ queue = FIFOQueue()
 queue.enqueue(0x46)
 # queue.enqueue(0x4A) #no ft
 queue.enqueue(0x46)
-queue.enqueue(0x4B)
+# queue.enqueue(0x4B)
 
 
 
@@ -157,7 +157,7 @@ class GS:
     #TODO: Command queue
     #TODO: Replace with actual database 
     @classmethod 
-    def database_readwrite(self, gls): 
+    def database_readwrite(self): 
         if self.state == GS_COMMS_STATE.DB_RW: 
             queue.enqueue(self.rx_msg_id)
             print ("Enq:", self.rx_msg_id)
@@ -177,7 +177,7 @@ class GS:
 
 
     @classmethod 
-    def receive(self, gls):
+    def receive(self):
         GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
 
         # Receive message from radiohead
@@ -246,14 +246,11 @@ class GS:
 
     
     @classmethod 
-    def transmit(self, gls):
+    def transmit(self):
         if self.state == GS_COMMS_STATE.TX: 
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            tx_header = (self.rq_cmd.to_bytes(1, 'big') +
-                        self.rq_sq.to_bytes(2, 'big') +
-                        self.rq_len.to_bytes(1, 'big'))
 
 
             if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA): #rq_cmd
@@ -343,6 +340,10 @@ class GS:
                 self.rq_len = 0
                 self.payload = bytearray()
 
+
+            tx_header = (self.rq_cmd.to_bytes(1, 'big') +
+                        self.rq_sq.to_bytes(2, 'big') +
+                        self.rq_len.to_bytes(1, 'big'))
             
             tx_message = tx_header + self.payload
 
