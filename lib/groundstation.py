@@ -159,12 +159,16 @@ class GS:
     @classmethod 
     def database_readwrite(self): 
         if self.state == GS_COMMS_STATE.DB_RW:
+            print ("////////////////////////")
+            print ("Currently in DB_RW state")
+            print ("///////////////////////")
             # TODO: Separate queue for RX and RQ
             # queue.enqueue(self.rx_msg_id)
             print ("Received:", self.rx_msg_id)
 
             # Check if we need to start file transfer sequence
             if(self.rx_msg_id == MSG_ID.GS_CMD_FILE_METADATA):
+                print ("DB_RW: msg.id == GS_CMD_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
                 if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
@@ -192,9 +196,11 @@ class GS:
                     self.rq_cmd = queue.dequeue()
 
             print ("Deq:", self.rq_cmd)
+            print ("****  DB_RW --> TX ****")
             self.state = GS_COMMS_STATE.TX
 
         else: 
+            print ("**** DB_RW --> RX ****")
             self.state = GS_COMMS_STATE.RX
 
 
@@ -218,16 +224,19 @@ class GS:
             self.unpack_message()
 
             if self.state == GS_COMMS_STATE.RX: 
-                print ("RX state")
+                print ("////////////////////////")
+                print ("Currently in RX state")
+                print ("///////////////////////")
                 #If Heartbeat
                 if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
                     # Message is a heartbeat with TM frame, unpack
                     TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+                    print ("**** Received HB. RX --> DB_RW ****")
                     self.state = GS_COMMS_STATE.DB_RW
                 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
                     # Message is file metadata
-                    print("Received file metadata")
+                    print("**** Received file metadata ****")
 
                     # Unpack file parameters
                     self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder='big')
@@ -236,6 +245,8 @@ class GS:
                     self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
 
                     print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
+
+                    print ("**** Received METADATA. RX --> DB_RW ****")
                     self.state = GS_COMMS_STATE.DB_RW
 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
@@ -273,22 +284,22 @@ class GS:
 
                     # Transition based on flag
                     if self.flag_rq_file == True:
+                        print ("**** Received METADATA. RX --> TX ****")
                         self.state = GS_COMMS_STATE.TX
                     else:
+                        print ("**** No/ Invalid METADATA. RX --> DB_RW ****")
                         self.state = GS_COMMS_STATE.DB_RW
                 
                 elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
-                    print (f'Received an ACK {self.rx_message}')
+                    print (f'**** Received an ACK {self.rx_message} ****')
                     self.state = GS_COMMS_STATE.DB_RW
 
                 else: 
                     # Invalid RX message ID
-                    print (f'Received invalid message ID {self.rx_msg_id}')
+                    print (f'**** Received invalid message ID {self.rx_msg_id} ****')
                     self.state = GS_COMMS_STATE.RX
 
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
-
-            #TODO: Check logic 
             return True
         
         else: 
@@ -300,6 +311,9 @@ class GS:
     @classmethod 
     def transmit(self):
         if self.state == GS_COMMS_STATE.TX: 
+            print ("////////////////////////")
+            print ("Currently in TX state")
+            print ("///////////////////////")
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
@@ -310,6 +324,7 @@ class GS:
                 self.rq_len = 5
                 self.payload = (self.file_id.to_bytes(1, 'big') +
                                 self.file_time.to_bytes(4, 'big'))
+                print ("Transmitting CMD: GS_CMD_FILE_METADATA")
 
             elif (self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
                 # Set RQ message parameters for PKT
@@ -319,6 +334,7 @@ class GS:
                 self.payload = (self.file_id.to_bytes(1, 'big') +
                                 self.file_time.to_bytes(4, 'big') + 
                                 self.rq_sq.to_bytes(2, 'big'))
+                print ("Transmitting CMD: GS_CMD_FILE_PKT")
 
             else:
                 # Set RQ message parameters for HB request
@@ -336,13 +352,14 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
 
-            # TODO: Check logic
+            print ("Transmitted CMND. TX --> RX")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
         else: 
-            print ("GS not in TX state, : It is in", self.state)
-            self.state = GS_COMMS_STATE.RX
+            print (f"Not in TX. Currently in {self.state}") 
+            print ("Did not transmit. In transmit(): attempting transition to TX")  
+            self.state = GS_COMMS_STATE.TX
 
 
         
