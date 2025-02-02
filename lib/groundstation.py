@@ -82,9 +82,10 @@ class FIFOQueue:
 
 queue = FIFOQueue()
 #TODO: Fill in with actual commands 
-queue.enqueue(0x01)
-queue.enqueue(0x01)
-queue.enqueue(0x01)
+queue.enqueue(0x46)
+queue.enqueue(0x4A)
+queue.enqueue(0x46)
+queue.enqueue(0x4B)
 
 
 
@@ -157,10 +158,11 @@ class GS:
         if gls.state == GS_COMMS_STATE.DB_RW: 
             queue.enqueue(self.rx_msg_id)
             print ("Enq:", self.rx_msg_id)
+            #TODO: mdg_id vs rq_cmd??
             if queue.is_empty(): 
-                self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                self.rx_msg_id = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
             else: 
-                self.rq_cmd = queue.dequeue()
+                self.rx_msg_id = queue.dequeue()
             print ("Deq:", self.rq_cmd)
             gls.state = GS_COMMS_STATE.TX
         else: 
@@ -204,7 +206,7 @@ class GS:
                     gls.state = GS_COMMS_STATE.DB_RW
 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
-                # TODO: Check for file ID and file time
+                    # TODO: Check for file ID and file time
                     # Message is file packet
                     print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
                     print(self.rx_message[9:self.rx_msg_size + 9])
@@ -215,6 +217,11 @@ class GS:
                         print("ERROR: Sequence count mismatch")
 
                     gls.state = GS_COMMS_STATE.DB_RW
+                
+                elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
+                    print (f'Received an ACK')
+                    gls.state = GS_COMMS_STATE.DB_RW
+
                     
                 else: 
                     #self loop 
