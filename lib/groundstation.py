@@ -163,7 +163,7 @@ class GS:
             print ("Received:", self.rx_msg_id)
 
             # Check if we need to start file transfer sequence
-            if(self.rx_msg_id == MSG_ID.GS_CMD_FILE_METADATA):
+            if(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
                 print ("DB_RW: msg.id == GS_CMD_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
@@ -224,6 +224,7 @@ class GS:
                     TelemetryUnpacker.unpack_tm_frame(self.rx_message)
                     print ("**** Received HB. RX --> DB_RW ****")
                     self.state = GS_COMMS_STATE.DB_RW
+                    self.database_readwrite()
                 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
                     # Message is file metadata
@@ -239,6 +240,7 @@ class GS:
 
                     print ("**** Received METADATA. RX --> DB_RW ****")
                     self.state = GS_COMMS_STATE.DB_RW
+                    self.database_readwrite()
 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
                     # TODO: Check for file ID and file time
@@ -275,30 +277,32 @@ class GS:
 
                     # Transition based on flag
                     if self.flag_rq_file == True:
-                        print ("**** Received METADATA. RX --> TX ****")
+                        print ("**** Received PKT. RX --> TX ****")
                         self.state = GS_COMMS_STATE.TX
                     else:
-                        print ("**** No/ Invalid METADATA. RX --> DB_RW ****")
+                        print ("**** Received all packets. RX --> DB_RW ****")
                         self.state = GS_COMMS_STATE.DB_RW
+                        self.database_readwrite()
                 
                 elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
                     print (f'**** Received an ACK {self.rx_message} ****')
                     self.state = GS_COMMS_STATE.DB_RW
+                    self.database_readwrite()
 
                 else: 
                     # Invalid RX message ID
                     print (f'**** Received invalid message ID {self.rx_msg_id} ****')
                     self.state = GS_COMMS_STATE.RX
+
             print ("\n")
-            self.database_readwrite()
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
             return True
         
         else: 
             # No message from SAT
-            print ("**** Nothing Received. RX --> DB_RW [for default HB] ****")
+            print ("**** Nothing Received. Stay in RX ****")
             print ("\n")
-            self.state = GS_COMMS_STATE.DB_RW
+            self.state = GS_COMMS_STATE.RX
             return False
 
 
