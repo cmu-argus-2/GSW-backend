@@ -61,6 +61,7 @@ class MSG_ID:
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
 
+
 # MockUp of Database 
 class FIFOQueue:
     def __init__(self):
@@ -83,7 +84,7 @@ class FIFOQueue:
 queue = FIFOQueue()
 #TODO: Fill in with actual commands 
 queue.enqueue(0x46)
-queue.enqueue(0x4A)
+# queue.enqueue(0x4A) #no ft
 queue.enqueue(0x46)
 queue.enqueue(0x4B)
 
@@ -109,26 +110,28 @@ class GS:
     state = GS_COMMS_STATE.RX
 
     # RX message parameters
+    # received msg parameters 
     rx_msg_id = 0x00
     rx_msg_sq = 0
     rx_msg_size = 0
     rx_message = []
 
     # RQ message parameters for commanding SC
+    # Request command 
     rq_cmd = 0x01
-    rq_sq = 0
-    rq_len = 0
+    rq_sq = 0 #sequence command - matters for file 
+    rq_len = 0 #error checking - still store errored message in database 
     payload = bytearray()
 
     # File metadata parameters
     file_id = 0x01
     file_time = 1738351687
     file_size = 0x00
-    file_target_sq = 0x00
-    flag_rq_file = True
+    file_target_sq = 0x00 #maximum sq count (240 bytes) --> error checking 
+    flag_rq_file = True #testing in the lab - once the image is received 
 
     # File TX parameters
-    gs_msg_sq = 0
+    gs_msg_sq = 0 #if file is multiple packets - number of packets received 
     file_array = []
 
     # For packet timing tests
@@ -158,15 +161,20 @@ class GS:
         if gls.state == GS_COMMS_STATE.DB_RW: 
             queue.enqueue(self.rx_msg_id)
             print ("Enq:", self.rx_msg_id)
-            #TODO: mdg_id vs rq_cmd??
+
             if queue.is_empty(): 
-                self.rx_msg_id = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
             else: 
-                self.rx_msg_id = queue.dequeue()
+                self.rq_cmd = queue.dequeue()
             print ("Deq:", self.rq_cmd)
             gls.state = GS_COMMS_STATE.TX
         else: 
             gls.state = GS_COMMS_STATE.RX
+
+
+    # all unique message ids --> one function --> actual unpacking with 
+    # telemetryUnpacker 
+
 
     @classmethod 
     def receive(self, gls):
@@ -248,10 +256,10 @@ class GS:
                         self.rq_len.to_bytes(1, 'big'))
 
 
-            if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
+            if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA): #rq_cmd
                 if(self.flag_rq_file == True):
                     # Set RQ message parameters for MD request
-                    self.rq_cmd = MSG_ID.GS_CMD_FILE_METADATA
+                    # self.rq_cmd = MSG_ID.GS_CMD_FILE_METADATA
                     self.rq_sq = 0
                     self.rq_len = 5
                     self.payload = (self.file_id.to_bytes(1, 'big') +
@@ -259,13 +267,13 @@ class GS:
                 
                 else:
                     # Set RQ message parameters for HB request
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    # self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     self.rq_sq = 0
                     self.rq_len = 0
                     self.payload = bytearray()
 
                 
-            elif (self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
+            elif (self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
                 # TODO: Better error checking
                 if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
                     # No file on satellite
@@ -286,7 +294,7 @@ class GS:
                                     self.file_time.to_bytes(4, 'big') + 
                                     self.rq_sq.to_bytes(2, 'big'))
 
-            elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
+            elif(self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
                 # TODO: Check for file ID and file time
                 # Set RQ message parameters for PKT
                 self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
