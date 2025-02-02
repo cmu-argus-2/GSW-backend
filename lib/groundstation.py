@@ -202,7 +202,7 @@ class GS:
     @classmethod 
     def receive(self):
         GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
-
+        print ("\n")
         # Receive message from radiohead
         rx_obj = self.radiohead.receive_message()
 
@@ -289,7 +289,7 @@ class GS:
                     # Invalid RX message ID
                     print (f'**** Received invalid message ID {self.rx_msg_id} ****')
                     self.state = GS_COMMS_STATE.RX
-            
+            print ("\n")
             self.database_readwrite()
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
             return True
@@ -297,6 +297,7 @@ class GS:
         else: 
             # No message from SAT
             print ("**** Nothing Received. RX --> DB_RW [for default HB] ****")
+            print ("\n")
             self.state = GS_COMMS_STATE.DB_RW
             return False
 
@@ -353,6 +354,7 @@ class GS:
         else: 
             print (f"Not in TX. Currently in {self.state}") 
             print ("Did not transmit. In transmit(): attempting transition to TX")  
+            print ("\n")
             self.state = GS_COMMS_STATE.RX
 
 
