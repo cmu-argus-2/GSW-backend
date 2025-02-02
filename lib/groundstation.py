@@ -154,7 +154,7 @@ class GS:
     #TODO: Replace with actual database 
     @classmethod 
     def database_readwrite(self): 
-        if self.state == GS_COMMS_STATE.DB_RW:
+        if (self.state == GS_COMMS_STATE.DB_RW):
             print ("////////////////////////")
             print ("Currently in DB_RW state")
             print ("///////////////////////")
@@ -289,7 +289,8 @@ class GS:
                     # Invalid RX message ID
                     print (f'**** Received invalid message ID {self.rx_msg_id} ****')
                     self.state = GS_COMMS_STATE.RX
-
+            
+            self.database_readwrite()
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
             return True
         
@@ -352,7 +353,7 @@ class GS:
         else: 
             print (f"Not in TX. Currently in {self.state}") 
             print ("Did not transmit. In transmit(): attempting transition to TX")  
-            self.state = GS_COMMS_STATE.TX
+            self.state = GS_COMMS_STATE.RX
 
 
         
