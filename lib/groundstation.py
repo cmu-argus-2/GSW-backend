@@ -7,13 +7,6 @@ from collections import deque
 from lib.radio_utils import *
 from lib.telemetry.unpacking import TelemetryUnpacker
 
-''' 
-TODOs: 
-- Read database and write database function
-- Check state transitions 
-- Can we start in DB_RW instead - if nothing in queue, we request for HB?
-'''
-
 
 # Ground station state
 class GS_COMMS_STATE:
@@ -57,8 +50,8 @@ class MSG_ID:
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
 
-
-# MockUp of Database 
+#--------------------- TODO replace with Database functions ----------------#
+# Mockup of Database 
 class FIFOQueue:
     def __init__(self):
         self.queue = deque()
@@ -83,8 +76,7 @@ queue.enqueue(0x46)
 queue.enqueue(0x4A)
 queue.enqueue(0x46)
 # queue.enqueue(0x4B)
-
-
+#----------------------------------------------------------------------------#
 
 class GS:
     # Radio abstraction for GS
@@ -116,7 +108,7 @@ class GS:
     # Request command 
     rq_cmd = 0x01
     rq_sq = 0 #sequence command - matters for file 
-    rq_len = 0 #error checking - still store errored message in database 
+    rq_len = 0 #error checking 
     payload = bytearray()
 
     # File metadata parameters
@@ -124,7 +116,7 @@ class GS:
     file_time = 1738351687
     file_size = 0x00
     file_target_sq = 0x00 #maximum sq count (240 bytes) --> error checking 
-    flag_rq_file = False #testing in the lab - once the image is received 
+    flag_rq_file = False # testing in the lab - once the image is received 
 
     # File TX parameters
     gs_msg_sq = 0 #if file is multiple packets - number of packets received 
@@ -150,8 +142,6 @@ class GS:
         # Unpack RX message header
         self.unpack_header()
 
-    #TODO: Command queue
-    #TODO: Replace with actual database 
     @classmethod 
     def database_readwrite(self): 
         if (self.state == GS_COMMS_STATE.DB_RW):
@@ -159,8 +149,6 @@ class GS:
             print ("Currently in DB_RW state")
             print ("///////////////////////")
             # TODO: Separate queue for RX and RQ
-            # queue.enqueue(self.rx_msg_id)
-            print ("Received:", self.rx_msg_id)
 
             # Check if we need to start file transfer sequence
             if(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
@@ -191,12 +179,9 @@ class GS:
                 else: 
                     self.rq_cmd = queue.dequeue()
 
-            print ("Deq:", self.rq_cmd)
-            print ("**** DB_RW --> TX ****")
             self.state = GS_COMMS_STATE.TX
 
         else: 
-            print ("**** DB_RW --> RX ****")
             self.state = GS_COMMS_STATE.RX
 
     @classmethod 
@@ -222,7 +207,7 @@ class GS:
                 if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
                     # Message is a heartbeat with TM frame, unpack
                     TelemetryUnpacker.unpack_tm_frame(self.rx_message)
-                    print ("**** Received HB. RX --> DB_RW ****")
+                    print ("**** Received HB ****")
                     self.state = GS_COMMS_STATE.DB_RW
                     self.database_readwrite()
                 
@@ -236,7 +221,7 @@ class GS:
                     self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder='big')
                     self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
 
-                    print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
+                    # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
 
                     print ("**** Received METADATA. RX --> DB_RW ****")
                     self.state = GS_COMMS_STATE.DB_RW
@@ -245,8 +230,10 @@ class GS:
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
                     # TODO: Check for file ID and file time
                     # Message is file packet
-                    print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
-                    print(self.rx_message[9:self.rx_msg_size + 9])
+
+                    # Debug print statements
+                    # print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
+                    # print(self.rx_message[9:self.rx_msg_size + 9])
 
                     # Check internal gs_msg_sq against rx_msg_sq
                     if(self.gs_msg_sq != self.rx_msg_sq):
@@ -357,8 +344,6 @@ class GS:
 
         else: 
             print (f"Not in TX. Currently in {self.state}") 
-            print ("Did not transmit. In transmit(): attempting transition to TX")  
-            print ("\n")
             self.state = GS_COMMS_STATE.RX
 
 
