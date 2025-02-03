@@ -203,79 +203,18 @@ class GS:
                 print ("////////////////////////")
                 print ("Currently in RX state")
                 print ("///////////////////////")
-                #If Heartbeat
+ 
                 if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
-                    # Message is a heartbeat with TM frame, unpack
-                    TelemetryUnpacker.unpack_tm_frame(self.rx_message)
-                    print ("**** Received HB ****")
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
+                    received_Heartbeat()
                 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
-                    # Message is file metadata
-                    print("**** Received file metadata ****")
-
-                    # Unpack file parameters
-                    self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder='big')
-                    self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder='big')
-                    self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder='big')
-                    self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
-
-                    # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
-
-                    print ("**** Received METADATA. RX --> DB_RW ****")
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
+                    received_Metadata()
 
                 elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
-                    # TODO: Check for file ID and file time
-                    # Message is file packet
+                    received_Filepkt()
 
-                    # Debug print statements
-                    # print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
-                    # print(self.rx_message[9:self.rx_msg_size + 9])
-
-                    # Check internal gs_msg_sq against rx_msg_sq
-                    if(self.gs_msg_sq != self.rx_msg_sq):
-                        # Sequence count mismatch
-                        print("ERROR: Sequence count mismatch")
-
-                    else:
-                        # Append packet to file_array
-                        self.file_array.append(self.rx_message[9:self.rx_msg_size + 9])
-                        # Increment sequence counter
-                        self.gs_msg_sq += 1
-
-                    # Compare gs_msg_sq to file_target_sq
-                    if(self.gs_msg_sq == self.file_target_sq):
-                        # Write file to memory
-                        filename = 'test_image.jpg'
-                        write_bytes = open(filename, 'wb')
-
-                        # Write all bytes to the file
-                        for i in range(self.file_target_sq):
-                            write_bytes.write(self.file_array[i])
-
-                        # Close file
-                        write_bytes.close()
-                        
-                        # Set flag
-                        self.flag_rq_file = False
-
-                    # Transition based on flag
-                    if self.flag_rq_file == True:
-                        print ("**** Received PKT. RX --> TX ****")
-                        self.state = GS_COMMS_STATE.TX
-                    else:
-                        print ("**** Received all packets. RX --> DB_RW ****")
-                        self.state = GS_COMMS_STATE.DB_RW
-                        self.database_readwrite()
-                
                 elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
-                    print (f'**** Received an ACK {self.rx_message} ****')
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-
+                    received_Ack()
                 else: 
                     # Invalid RX message ID
                     print (f'**** Received invalid message ID {self.rx_msg_id} ****')
@@ -303,24 +242,11 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA): #rq_cmd
-                # Set RQ message parameters for MD request
-                # self.rq_cmd = MSG_ID.GS_CMD_FILE_METADATA
-                self.rq_sq = 0
-                self.rq_len = 5
-                self.payload = (self.file_id.to_bytes(1, 'big') +
-                                self.file_time.to_bytes(4, 'big'))
-                print ("Transmitting CMD: GS_CMD_FILE_METADATA")
+            if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA):
+                transmit_Metadata()
 
             elif (self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
-                # Set RQ message parameters for PKT
-                # self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
-                self.rq_sq = self.gs_msg_sq
-                self.rq_len = 7
-                self.payload = (self.file_id.to_bytes(1, 'big') +
-                                self.file_time.to_bytes(4, 'big') + 
-                                self.rq_sq.to_bytes(2, 'big'))
-                print ("Transmitting CMD: GS_CMD_FILE_PKT")
+                transmit_Filepkt()
 
             else:
                 # Set RQ message parameters for HB request
@@ -345,6 +271,109 @@ class GS:
         else: 
             print (f"Not in TX. Currently in {self.state}") 
             self.state = GS_COMMS_STATE.RX
+
+
+
+#------------------------ Received Information --------------------------------#
+def received_Heartbeat(self):
+    # Message is a heartbeat with TM frame, unpack
+    TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+    print ("**** Received HB ****")
+    self.state = GS_COMMS_STATE.DB_RW
+    self.database_readwrite()
+
+def received_Metadata(self): 
+    # Message is file metadata
+    print("**** Received file metadata ****")
+
+    # Unpack file parameters
+    self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder='big')
+    self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder='big')
+    self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder='big')
+    self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
+
+    # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
+
+    self.state = GS_COMMS_STATE.DB_RW
+    self.database_readwrite()
+
+
+def received_Filepkt(self):
+    # TODO: Check for file ID and file time
+    # Message is file packet
+    # Debug print statements
+    print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
+    # print(self.rx_message[9:self.rx_msg_size + 9])
+    
+    # Check internal gs_msg_sq against rx_msg_sq
+    if(self.gs_msg_sq != self.rx_msg_sq):
+        # Sequence count mismatch
+        print("ERROR: Sequence count mismatch")
+
+    else:
+        # Append packet to file_array
+        self.file_array.append(self.rx_message[9:self.rx_msg_size + 9])
+        # Increment sequence counter
+        self.gs_msg_sq += 1
+
+    # Compare gs_msg_sq to file_target_sq
+    if(self.gs_msg_sq == self.file_target_sq):
+        # Write file to memory
+        filename = 'test_image.jpg'
+        write_bytes = open(filename, 'wb')
+
+        # Write all bytes to the file
+        for i in range(self.file_target_sq):
+            write_bytes.write(self.file_array[i])
+
+        # Close file
+        write_bytes.close()
+        
+        # Set flag
+        self.flag_rq_file = False
+
+    # Transition based on flag
+    if self.flag_rq_file == True:
+        print ("**** Received PKT. RX --> TX ****")
+        self.state = GS_COMMS_STATE.TX
+    else:
+        print ("**** Received all packets. RX --> DB_RW ****")
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
+
+
+def received_Ack(self):
+    print (f'**** Received an ACK {self.rx_message} ****')
+    self.state = GS_COMMS_STATE.DB_RW
+    self.database_readwrite()
+
+
+    
+#------------------------ Transmitted Information ----------------------------#
+
+def transmit_Metadata(self):
+    # Set RQ message parameters for MD request
+    self.rq_sq = 0
+    self.rq_len = 5
+    self.payload = (self.file_id.to_bytes(1, 'big') +
+                    self.file_time.to_bytes(4, 'big'))
+    print ("Transmitting CMD: GS_CMD_FILE_METADATA")
+
+def transmit_Filepkt(self):
+    # Set RQ message parameters for PKT
+    self.rq_sq = self.gs_msg_sq
+    self.rq_len = 7
+    self.payload = (self.file_id.to_bytes(1, 'big') +
+                    self.file_time.to_bytes(4, 'big') + 
+                    self.rq_sq.to_bytes(2, 'big'))
+    print ("Transmitting CMD: GS_CMD_FILE_PKT")
+
+
+
+
+
+
+
 
 
         
