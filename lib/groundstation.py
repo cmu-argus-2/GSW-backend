@@ -1,18 +1,24 @@
 import datetime
 import time
+from collections import deque
 
 import RPi.GPIO as GPIO
 
-from collections import deque 
-from lib.radio_utils import *
+from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
+
+"""
+GS state functions:
+receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
+"""
 
 
 # Ground station state
 class GS_COMMS_STATE:
     RX = 0x00
-    TX = 0X01
-    DB_RW = 0X02
+    TX = 0x01
+    DB_RW = 0x02
+
 
 # Message ID database for communication protocol
 class MSG_ID:
@@ -26,7 +32,7 @@ class MSG_ID:
     # SAT TM frames, requested by GS
     SAT_TM_HAL = 0x02
     SAT_TM_STORAGE = 0x03
-    SAT_TM_PAYLOAD = 0x04 
+    SAT_TM_PAYLOAD = 0x04
 
     # SAT ACK, in response to GS commands
     SAT_ACK = 0x0F
@@ -50,8 +56,9 @@ class MSG_ID:
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
 
-#--------------------- TODO replace with Database functions ----------------#
-# Mockup of Database 
+
+# -------------------- TODO: replace with Database functions ---------------- #
+# Mockup of Database
 class FIFOQueue:
     def __init__(self):
         self.queue = deque()
@@ -70,13 +77,14 @@ class FIFOQueue:
     def size(self):
         return len(self.queue)
 
+
 queue = FIFOQueue()
-#TODO: Fill in with actual commands 
 queue.enqueue(0x46)
 queue.enqueue(0x4A)
 queue.enqueue(0x46)
 # queue.enqueue(0x4B)
-#----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 class GS:
     # Radio abstraction for GS
@@ -93,33 +101,33 @@ class GS:
     # Ensure pins are off initially
     GPIO.output(rx_ctrl, GPIO.LOW)
     GPIO.output(tx_ctrl, GPIO.LOW)
-    
-    #State ground station
+
+    # State ground station
     state = GS_COMMS_STATE.RX
 
     # RX message parameters
-    # received msg parameters 
+    # received msg parameters
     rx_msg_id = 0x00
     rx_msg_sq = 0
     rx_msg_size = 0
     rx_message = []
 
     # RQ message parameters for commanding SC
-    # Request command 
+    # Request command
     rq_cmd = 0x01
-    rq_sq = 0 #sequence command - matters for file 
-    rq_len = 0 #error checking 
+    rq_sq = 0  # sequence command - matters for file
+    rq_len = 0  # error checking
     payload = bytearray()
 
     # File metadata parameters
     file_id = 0x01
     file_time = 1738351687
     file_size = 0x00
-    file_target_sq = 0x00 #maximum sq count (240 bytes) --> error checking 
-    flag_rq_file = False # testing in the lab - once the image is received 
+    file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
+    flag_rq_file = False  # testing in the lab - once the image is received
 
     # File TX parameters
-    gs_msg_sq = 0 #if file is multiple packets - number of packets received 
+    gs_msg_sq = 0  # if file is multiple packets - number of packets received
     file_array = []
 
     # For packet timing tests
@@ -127,9 +135,12 @@ class GS:
 
     @classmethod
     def unpack_header(self):
-        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder='big')
-        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder='big')
-        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder='big')
+        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]),
+                                        byteorder="big")
+        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3],
+                                        byteorder="big")
+        self.rx_msg_size = int.from_bytes(self.rx_message[3:4],
+                                          byteorder="big")
 
     @classmethod
     def unpack_message(self):
@@ -137,33 +148,38 @@ class GS:
         current_time = datetime.datetime.now()
         # Format the current time
         formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
-        formatted_time = formatted_time.encode('utf-8')
+        formatted_time = formatted_time.encode("utf-8")
 
         # Unpack RX message header
         self.unpack_header()
 
-    @classmethod 
-    def database_readwrite(self): 
-        if (self.state == GS_COMMS_STATE.DB_RW):
-            print ("////////////////////////")
-            print ("Currently in DB_RW state")
-            print ("///////////////////////")
+    # -------------------------- SM functions ------------------------------- #
+    @classmethod
+    def database_readwrite(self):
+        if self.state == GS_COMMS_STATE.DB_RW:
+            print("////////////////////////")
+            print("Currently in DB_RW state")
+            print("///////////////////////")
             # TODO: Separate queue for RX and RQ
 
             # Check if we need to start file transfer sequence
-            if(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
-                print ("DB_RW: msg.id == GS_CMD_FILE_METADATA")
+            if self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
+                print("DB_RW: msg.id == SAT_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
-                if(self.file_id == 0x00 or self.file_size == 0 or self.file_target_sq == 0):
+                if (
+                    self.file_id == 0x00
+                    or self.file_size == 0
+                    or self.file_target_sq == 0
+                ):
                     # No file on satellite
                     self.flag_rq_file = False
 
                     # Dequeue the next command
                     # TODO: Check if queue has a valid message ID
-                    if queue.is_empty(): 
+                    if queue.is_empty():
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    else: 
+                    else:
                         self.rq_cmd = queue.dequeue()
 
                 else:
@@ -174,79 +190,80 @@ class GS:
             else:
                 # Dequeue the next command
                 # TODO: Check if queue has a valid message ID
-                if queue.is_empty(): 
+                # TODO: remove default - handled in CI 
+                if queue.is_empty():
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                else: 
+                else:
                     self.rq_cmd = queue.dequeue()
 
             self.state = GS_COMMS_STATE.TX
 
-        else: 
+        else:
             self.state = GS_COMMS_STATE.RX
 
-    @classmethod 
+    @classmethod
     def receive(self):
         GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
-        print ("\n")
+        print("\n")
         # Receive message from radiohead
         rx_obj = self.radiohead.receive_message()
 
         if rx_obj is not None:
             # Message from SAT
             self.rx_message = rx_obj.message
-            print(f"Message received with RSSI: {rx_obj.rssi} at time {time.monotonic() - self.rx_time}")
+            print(
+                f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}"
+            )
             self.rx_time = time.monotonic()
 
             self.unpack_message()
 
-            if self.state == GS_COMMS_STATE.RX: 
-                print ("////////////////////////")
-                print ("Currently in RX state")
-                print ("///////////////////////")
- 
-                if(self.rx_msg_id == MSG_ID.SAT_HEARTBEAT):
-                    received_Heartbeat()
-                
-                elif(self.rx_msg_id == MSG_ID.SAT_FILE_METADATA):
-                    received_Metadata()
+            if self.state == GS_COMMS_STATE.RX:
+                print("////////////////////////")
+                print("Currently in RX state")
+                print("///////////////////////")
 
-                elif(self.rx_msg_id == MSG_ID.SAT_FILE_PKT):
-                    received_Filepkt()
+                if self.rx_msg_id == MSG_ID.SAT_HEARTBEAT:
+                    self.received_Heartbeat()
 
-                elif (self.rx_msg_id == MSG_ID.SAT_ACK): 
-                    received_Ack()
-                else: 
+                elif self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
+                    self.received_Metadata()
+
+                elif self.rx_msg_id == MSG_ID.SAT_FILE_PKT:
+                    self.received_Filepkt()
+
+                elif self.rx_msg_id == MSG_ID.SAT_ACK:
+                    self.received_Ack()
+                else:
                     # Invalid RX message ID
-                    print (f'**** Received invalid message ID {self.rx_msg_id} ****')
+                    print(f"**** Received invalid msgID {self.rx_msg_id} ****")
                     self.state = GS_COMMS_STATE.RX
 
-            print ("\n")
+            print("\n")
             GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
             return True
-        
-        else: 
+
+        else:
             # No message from SAT
-            print ("**** Nothing Received. Stay in RX ****")
-            print ("\n")
+            print("**** Nothing Received. Stay in RX ****")
+            print("\n")
             self.state = GS_COMMS_STATE.RX
             return False
 
-
-    
-    @classmethod 
+    @classmethod
     def transmit(self):
-        if self.state == GS_COMMS_STATE.TX: 
-            print ("////////////////////////")
-            print ("Currently in TX state")
-            print ("///////////////////////")
+        if self.state == GS_COMMS_STATE.TX:
+            print("////////////////////////")
+            print("Currently in TX state")
+            print("///////////////////////")
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if(self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA):
-                transmit_Metadata()
+            if self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
+                self.transmit_Metadata()
 
-            elif (self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT):
-                transmit_Filepkt()
+            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
+                self.transmit_Filepkt()
 
             else:
                 # Set RQ message parameters for HB request
@@ -255,125 +272,122 @@ class GS:
                 self.rq_len = 0
                 self.payload = bytearray()
 
-            tx_header = (self.rq_cmd.to_bytes(1, 'big') +
-                        self.rq_sq.to_bytes(2, 'big') +
-                        self.rq_len.to_bytes(1, 'big'))
-            
+            tx_header = (
+                self.rq_cmd.to_bytes(1, "big")
+                + self.rq_sq.to_bytes(2, "big")
+                + self.rq_len.to_bytes(1, "big")
+            )
+
             tx_message = tx_header + self.payload
 
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
 
-            print ("Transmitted CMND. TX --> RX")
+            print("Transmitted CMND. TX --> RX")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
-        else: 
-            print (f"Not in TX. Currently in {self.state}") 
+        else:
+            print(f"Not in TX. Currently in {self.state}")
             self.state = GS_COMMS_STATE.RX
 
-
-
-#------------------------ Received Information --------------------------------#
-def received_Heartbeat(self):
-    # Message is a heartbeat with TM frame, unpack
-    TelemetryUnpacker.unpack_tm_frame(self.rx_message)
-    print ("**** Received HB ****")
-    self.state = GS_COMMS_STATE.DB_RW
-    self.database_readwrite()
-
-def received_Metadata(self): 
-    # Message is file metadata
-    print("**** Received file metadata ****")
-
-    # Unpack file parameters
-    self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder='big')
-    self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder='big')
-    self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder='big')
-    self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder='big')
-
-    # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time}, Size: {self.file_size}, Message Count: {self.file_target_sq}")
-
-    self.state = GS_COMMS_STATE.DB_RW
-    self.database_readwrite()
-
-
-def received_Filepkt(self):
-    # TODO: Check for file ID and file time
-    # Message is file packet
-    # Debug print statements
-    print(f"Received file packet {self.rx_msg_sq} out of {self.file_target_sq}")
-    # print(self.rx_message[9:self.rx_msg_size + 9])
-    
-    # Check internal gs_msg_sq against rx_msg_sq
-    if(self.gs_msg_sq != self.rx_msg_sq):
-        # Sequence count mismatch
-        print("ERROR: Sequence count mismatch")
-
-    else:
-        # Append packet to file_array
-        self.file_array.append(self.rx_message[9:self.rx_msg_size + 9])
-        # Increment sequence counter
-        self.gs_msg_sq += 1
-
-    # Compare gs_msg_sq to file_target_sq
-    if(self.gs_msg_sq == self.file_target_sq):
-        # Write file to memory
-        filename = 'test_image.jpg'
-        write_bytes = open(filename, 'wb')
-
-        # Write all bytes to the file
-        for i in range(self.file_target_sq):
-            write_bytes.write(self.file_array[i])
-
-        # Close file
-        write_bytes.close()
-        
-        # Set flag
-        self.flag_rq_file = False
-
-    # Transition based on flag
-    if self.flag_rq_file == True:
-        print ("**** Received PKT. RX --> TX ****")
-        self.state = GS_COMMS_STATE.TX
-    else:
-        print ("**** Received all packets. RX --> DB_RW ****")
+    # ------------------------ Received Information ------------------------- #
+    @classmethod
+    def received_Heartbeat(self):
+        # Message is a heartbeat with TM frame, unpack
+        TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+        print("**** Received HB ****")
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
+    @classmethod
+    def received_Metadata(self):
+        # Message is file metadata
+        print("**** Received file metadata ****")
 
-def received_Ack(self):
-    print (f'**** Received an ACK {self.rx_message} ****')
-    self.state = GS_COMMS_STATE.DB_RW
-    self.database_readwrite()
+        # Unpack file parameters
+        self.file_id = int.from_bytes((self.rx_message[4:5]),
+                                      byteorder="big")
+        self.file_time = int.from_bytes((self.rx_message[5:9]),
+                                        byteorder="big")
+        self.file_size = int.from_bytes((self.rx_message[9:13]),
+                                        byteorder="big")
+        self.file_target_sq = int.from_bytes((self.rx_message[13:15]),
+                                             byteorder="big")
 
+        # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time},
+        # Size: {self.file_size}, Message Count: {self.file_target_sq}")
 
-    
-#------------------------ Transmitted Information ----------------------------#
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
 
-def transmit_Metadata(self):
-    # Set RQ message parameters for MD request
-    self.rq_sq = 0
-    self.rq_len = 5
-    self.payload = (self.file_id.to_bytes(1, 'big') +
-                    self.file_time.to_bytes(4, 'big'))
-    print ("Transmitting CMD: GS_CMD_FILE_METADATA")
+    @classmethod
+    def received_Filepkt(self):
+        # TODO: Check for file ID and file time
+        # Message is file packet
+        print(f"Received pkt {self.rx_msg_sq} out of {self.file_target_sq}")
+        # print(self.rx_message[9:self.rx_msg_size + 9])
 
-def transmit_Filepkt(self):
-    # Set RQ message parameters for PKT
-    self.rq_sq = self.gs_msg_sq
-    self.rq_len = 7
-    self.payload = (self.file_id.to_bytes(1, 'big') +
-                    self.file_time.to_bytes(4, 'big') + 
-                    self.rq_sq.to_bytes(2, 'big'))
-    print ("Transmitting CMD: GS_CMD_FILE_PKT")
+        # Check internal gs_msg_sq against rx_msg_sq
+        if self.gs_msg_sq != self.rx_msg_sq:
+            # Sequence count mismatch
+            print("ERROR: Sequence count mismatch")
 
+        else:
+            # Append packet to file_array
+            self.file_array.append(self.rx_message[9: self.rx_msg_size + 9])
+            # Increment sequence counter
+            self.gs_msg_sq += 1
 
+        # Compare gs_msg_sq to file_target_sq
+        if self.gs_msg_sq == self.file_target_sq:
+            # Write file to memory
+            filename = "test_image.jpg"
+            write_bytes = open(filename, "wb")
 
+            # Write all bytes to the file
+            for i in range(self.file_target_sq):
+                write_bytes.write(self.file_array[i])
 
+            # Close file
+            write_bytes.close()
 
+            # Set flag
+            self.flag_rq_file = False
 
+        # Transition based on flag
+        if self.flag_rq_file is True:
+            print("**** Received PKT. RX --> TX ****")
+            self.state = GS_COMMS_STATE.TX
+        else:
+            print("**** Received all packets. RX --> DB_RW ****")
+            self.state = GS_COMMS_STATE.DB_RW
+            self.database_readwrite()
 
+    @classmethod
+    def received_Ack(self):
+        print(f"**** Received an ACK {self.rx_message} ****")
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
 
+    # ----------------------- Transmitted Information ----------------------- #
+    @classmethod
+    def transmit_Metadata(self):
+        # Set RQ message parameters for MD request
+        self.rq_sq = 0
+        self.rq_len = 5
+        self.payload = (self.file_id.to_bytes(1, "big") +
+                        self.file_time.to_bytes(4, "big"))
+        print("Transmitting CMD: GS_CMD_FILE_METADATA")
 
-        
+    @classmethod
+    def transmit_Filepkt(self):
+        # Set RQ message parameters for PKT
+        self.rq_sq = self.gs_msg_sq
+        self.rq_len = 7
+        self.payload = (
+            self.file_id.to_bytes(1, "big")
+            + self.file_time.to_bytes(4, "big")
+            + self.rq_sq.to_bytes(2, "big")
+        )
+        print("Transmitting CMD: GS_CMD_FILE_PKT")

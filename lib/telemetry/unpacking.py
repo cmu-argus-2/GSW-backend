@@ -251,9 +251,9 @@ class TelemetryUnpacker:
         self._data_THERMAL[THERMAL_IDX.CPU_TEMPERATURE] = (
             unpack_unsigned_short_int(msg[229:231]) / 100
         )
-        self._data_THERMAL[
-            THERMAL_IDX.BATTERY_PACK_TEMPERATURE
-        ] = unpack_unsigned_short_int(msg[231:233])
+        self._data_THERMAL[THERMAL_IDX.BATTERY_PACK_TEMPERATURE] = (
+            unpack_unsigned_short_int(msg[231:233])
+        )
 
         # TODO: Remove temp debugging
         print()
