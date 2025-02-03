@@ -1,9 +1,13 @@
 import sys
 
-from lib.shell_utils import (receive_loop, receive_loop_emulator,
-                             receive_loop_serial, send_command,
-                             send_command_emulator, send_command_serial)
-
+from lib.shell_utils import (
+    receive_loop,
+    receive_loop_emulator,
+    receive_loop_serial,
+    send_command,
+    send_command_emulator,
+    send_command_serial,
+)
 
 while True:
     connection_prompt = """
@@ -14,7 +18,7 @@ Are you connecting to the satellite via:
  - (q) quit
 : """
     conn_type = input(connection_prompt)
-    if conn_type == 'q':
+    if conn_type == "q":
         sys.exit(0)
 
     for_prompt = """
@@ -24,14 +28,11 @@ Are you...
  - (q) quit
 : """
     reason = input(for_prompt)
-    if reason == 'q':
+    if reason == "q":
         sys.exit(0)
 
     options = {
-        "r": {
-            "r": receive_loop,
-            "c": send_command
-        },
+        "r": {"r": receive_loop, "c": send_command},
         "t": {
             "r": receive_loop_serial,
             "c": send_command_serial,

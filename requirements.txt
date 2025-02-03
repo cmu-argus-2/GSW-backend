@@ -4,4 +4,4 @@ influxdb_client==1.44.0
 mysql-connector-python==8.4.0
 pymongo==4.7.3
 pyserial==3.5
-spidev==3.5
+# spidev==3.5

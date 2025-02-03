@@ -1,142 +1,142 @@
 # Index constants for accessing data in the Data Handler
 
+
+def const(val):
+    # Mock for uPy mock
+    return val
+
+
 class CDH_IDX:
-    TIME = 0
-    SC_STATE = 1
-    SD_USAGE = 2
-    CURRENT_RAM_USAGE = 3
-    REBOOT_COUNT = 4
-    WATCHDOG_TIMER = 5
-    HAL_BITFLAGS = 6
+    TIME = const(0)
+    SC_STATE = const(1)
+    SD_USAGE = const(2)
+    CURRENT_RAM_USAGE = const(3)
+    REBOOT_COUNT = const(4)
+    WATCHDOG_TIMER = const(5)
+    HAL_BITFLAGS = const(6)
+    DETUMBLING_ERROR_FLAG = const(7)
 
 
 class EPS_IDX:
-    TIME_EPS = 0
-    MAINBOARD_VOLTAGE = 1
-    MAINBOARD_CURRENT = 2
-    BATTERY_PACK_REPORTED_SOC = 3
-    BATTERY_PACK_REPORTED_CAPACITY = 4
-    BATTERY_PACK_CURRENT = 5
-    BATTERY_PACK_VOLTAGE = 6
-    BATTERY_PACK_MIDPOINT_VOLTAGE = 7
-    BATTERY_CYCLES = 8
-    BATTERY_PACK_TTE = 9
-    BATTERY_PACK_TTF = 10
-    BATTERY_TIME_SINCE_POWER_UP = 11
-    XP_COIL_VOLTAGE = 12
-    XP_COIL_CURRENT = 13
-    XM_COIL_VOLTAGE = 14
-    XM_COIL_CURRENT = 15
-    YP_COIL_VOLTAGE = 16
-    YP_COIL_CURRENT = 17
-    YM_COIL_VOLTAGE = 18
-    YM_COIL_CURRENT = 19
-    ZP_COIL_VOLTAGE = 20
-    ZP_COIL_CURRENT = 21
-    ZM_COIL_VOLTAGE = 22
-    ZM_COIL_CURRENT = 23
-    JETSON_INPUT_VOLTAGE = 24
-    JETSON_INPUT_CURRENT = 25
-    RF_LDO_OUTPUT_VOLTAGE = 26
-    RF_LDO_OUTPUT_CURRENT = 27
-    GPS_VOLTAGE = 28
-    GPS_CURRENT = 29
-    XP_SOLAR_CHARGE_VOLTAGE = 30
-    XP_SOLAR_CHARGE_CURRENT = 31
-    XM_SOLAR_CHARGE_VOLTAGE = 32
-    XM_SOLAR_CHARGE_CURRENT = 33
-    YP_SOLAR_CHARGE_VOLTAGE = 34
-    YP_SOLAR_CHARGE_CURRENT = 35
-    YM_SOLAR_CHARGE_VOLTAGE = 36
-    YM_SOLAR_CHARGE_CURRENT = 37
-    ZP_SOLAR_CHARGE_VOLTAGE = 38
-    ZP_SOLAR_CHARGE_CURRENT = 39
-    ZM_SOLAR_CHARGE_VOLTAGE = 40
-    ZM_SOLAR_CHARGE_CURRENT = 41
+    TIME_EPS = const(0)
+    MAINBOARD_VOLTAGE = const(1)
+    MAINBOARD_CURRENT = const(2)
+    BATTERY_PACK_REPORTED_SOC = const(3)
+    BATTERY_PACK_REPORTED_CAPACITY = const(4)
+    BATTERY_PACK_CURRENT = const(5)
+    BATTERY_PACK_VOLTAGE = const(6)
+    BATTERY_PACK_MIDPOINT_VOLTAGE = const(7)
+    BATTERY_PACK_TTE = const(8)
+    BATTERY_PACK_TTF = const(9)
+    XP_COIL_VOLTAGE = const(10)
+    XP_COIL_CURRENT = const(11)
+    XM_COIL_VOLTAGE = const(12)
+    XM_COIL_CURRENT = const(13)
+    YP_COIL_VOLTAGE = const(14)
+    YP_COIL_CURRENT = const(15)
+    YM_COIL_VOLTAGE = const(16)
+    YM_COIL_CURRENT = const(17)
+    ZP_COIL_VOLTAGE = const(18)
+    ZP_COIL_CURRENT = const(19)
+    ZM_COIL_VOLTAGE = const(20)
+    ZM_COIL_CURRENT = const(21)
+    JETSON_INPUT_VOLTAGE = const(22)
+    JETSON_INPUT_CURRENT = const(23)
+    RF_LDO_OUTPUT_VOLTAGE = const(24)
+    RF_LDO_OUTPUT_CURRENT = const(25)
+    GPS_VOLTAGE = const(26)
+    GPS_CURRENT = const(27)
+    XP_SOLAR_CHARGE_VOLTAGE = const(28)
+    XP_SOLAR_CHARGE_CURRENT = const(29)
+    XM_SOLAR_CHARGE_VOLTAGE = const(30)
+    XM_SOLAR_CHARGE_CURRENT = const(31)
+    YP_SOLAR_CHARGE_VOLTAGE = const(32)
+    YP_SOLAR_CHARGE_CURRENT = const(33)
+    YM_SOLAR_CHARGE_VOLTAGE = const(34)
+    YM_SOLAR_CHARGE_CURRENT = const(35)
+    ZP_SOLAR_CHARGE_VOLTAGE = const(36)
+    ZP_SOLAR_CHARGE_CURRENT = const(37)
+    ZM_SOLAR_CHARGE_VOLTAGE = const(38)
+    ZM_SOLAR_CHARGE_CURRENT = const(39)
 
 
 class ADCS_IDX:
-    TIME_ADCS = 0
-    ADCS_STATE = 1
-    GYRO_X = 2
-    GYRO_Y = 3
-    GYRO_Z = 4
-    MAG_X = 5
-    MAG_Y = 6
-    MAG_Z = 7
-    SUN_STATUS = 8
-    SUN_VEC_X = 9
-    SUN_VEC_Y = 10
-    SUN_VEC_Z = 11
-    ECLIPSE = 12
-    LIGHT_SENSOR_XP = 13
-    LIGHT_SENSOR_XM = 14
-    LIGHT_SENSOR_YP = 15
-    LIGHT_SENSOR_YM = 16
-    LIGHT_SENSOR_ZP1 = 17
-    LIGHT_SENSOR_ZP2 = 18
-    LIGHT_SENSOR_ZP3 = 19
-    LIGHT_SENSOR_ZP4 = 20
-    LIGHT_SENSOR_ZM = 21
-    XP_COIL_STATUS = 22
-    XM_COIL_STATUS = 23
-    YP_COIL_STATUS = 24
-    YM_COIL_STATUS = 25
-    ZP_COIL_STATUS = 26
-    ZM_COIL_STATUS = 27
-    COARSE_ATTITUDE_QW = 28
-    COARSE_ATTITUDE_QX = 29
-    COARSE_ATTITUDE_QY = 30
-    COARSE_ATTITUDE_QZ = 31
-    STAR_TRACKER_STATUS = 32
-    STAR_TRACKER_ATTITUDE_QW = 33
-    STAR_TRACKER_ATTITUDE_QX = 34
-    STAR_TRACKER_ATTITUDE_QY = 35
-    STAR_TRACKER_ATTITUDE_QZ = 36
+    TIME_ADCS = const(0)
+    MODE = const(1)
+    GYRO_X = const(2)
+    GYRO_Y = const(3)
+    GYRO_Z = const(4)
+    MAG_X = const(5)
+    MAG_Y = const(6)
+    MAG_Z = const(7)
+    SUN_STATUS = const(8)
+    SUN_VEC_X = const(9)
+    SUN_VEC_Y = const(10)
+    SUN_VEC_Z = const(11)
+    ECLIPSE = const(12)
+    LIGHT_SENSOR_XP = const(13)
+    LIGHT_SENSOR_XM = const(14)
+    LIGHT_SENSOR_YP = const(15)
+    LIGHT_SENSOR_YM = const(16)
+    LIGHT_SENSOR_ZP1 = const(17)
+    LIGHT_SENSOR_ZP2 = const(18)
+    LIGHT_SENSOR_ZP3 = const(19)
+    LIGHT_SENSOR_ZP4 = const(20)
+    LIGHT_SENSOR_ZM = const(21)
+    XP_COIL_STATUS = const(22)
+    XM_COIL_STATUS = const(23)
+    YP_COIL_STATUS = const(24)
+    YM_COIL_STATUS = const(25)
+    ZP_COIL_STATUS = const(26)
+    ZM_COIL_STATUS = const(27)
+    COARSE_ATTITUDE_QW = const(28)
+    COARSE_ATTITUDE_QX = const(29)
+    COARSE_ATTITUDE_QY = const(30)
+    COARSE_ATTITUDE_QZ = const(31)
 
 
 class IMU_IDX:
-    TIME_IMU = 0
-    ACCEL_X = 1
-    ACCEL_Y = 2
-    ACCEL_Z = 3
-    MAGNETOMETER_X = 4
-    MAGNETOMETER_Y = 5
-    MAGNETOMETER_Z = 6
-    GYROSCOPE_X = 7
-    GYROSCOPE_Y = 8
-    GYROSCOPE_Z = 9
+    TIME_IMU = const(0)
+    ACCEL_X = const(1)
+    ACCEL_Y = const(2)
+    ACCEL_Z = const(3)
+    MAGNETOMETER_X = const(4)
+    MAGNETOMETER_Y = const(5)
+    MAGNETOMETER_Z = const(6)
+    GYROSCOPE_X = const(7)
+    GYROSCOPE_Y = const(8)
+    GYROSCOPE_Z = const(9)
 
 
 class GPS_IDX:
-    TIME_GPS = 0
-    GPS_MESSAGE_ID = 1
-    GPS_FIX_MODE = 2
-    GPS_NUMBER_OF_SV = 3
-    GPS_GNSS_WEEK = 4
-    GPS_GNSS_TOW = 5
-    GPS_LATITUDE = 6
-    GPS_LONGITUDE = 7
-    GPS_ELLIPSOID_ALT = 8
-    GPS_MEAN_SEA_LVL_ALT = 9
-    GPS_GDOP = 10
-    GPS_PDOP = 11
-    GPS_HDOP = 12
-    GPS_VDOP = 13
-    GPS_TDOP = 14
-    GPS_ECEF_X = 15
-    GPS_ECEF_Y = 16
-    GPS_ECEF_Z = 17
-    GPS_ECEF_VX = 18
-    GPS_ECEF_VY = 19
-    GPS_ECEF_VZ = 20
+    TIME_GPS = const(0)
+    GPS_MESSAGE_ID = const(1)
+    GPS_FIX_MODE = const(2)
+    GPS_NUMBER_OF_SV = const(3)
+    GPS_GNSS_WEEK = const(4)
+    GPS_GNSS_TOW = const(5)
+    GPS_LATITUDE = const(6)
+    GPS_LONGITUDE = const(7)
+    GPS_ELLIPSOID_ALT = const(8)
+    GPS_MEAN_SEA_LVL_ALT = const(9)
+    GPS_GDOP = const(10)
+    GPS_PDOP = const(11)
+    GPS_HDOP = const(12)
+    GPS_VDOP = const(13)
+    GPS_TDOP = const(14)
+    GPS_ECEF_X = const(15)
+    GPS_ECEF_Y = const(16)
+    GPS_ECEF_Z = const(17)
+    GPS_ECEF_VX = const(18)
+    GPS_ECEF_VY = const(19)
+    GPS_ECEF_VZ = const(20)
 
 
 class THERMAL_IDX:
-    TIME_THERMAL = 0
-    IMU_TEMPERATURE = 1
-    CPU_TEMPERATURE = 2
-    BATTERY_PACK_TEMPERATURE = 3
+    TIME_THERMAL = const(0)
+    IMU_TEMPERATURE = const(1)
+    CPU_TEMPERATURE = const(2)
+    BATTERY_PACK_TEMPERATURE = const(3)
 
 
 class PAYLOAD_IDX:

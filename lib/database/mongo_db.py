@@ -41,14 +41,13 @@ class Database:
         }
         try:
             database = self.client["heartbeats"]
-            collection = database['battery']
+            collection = database["battery"]
             collection.insert_one(upload)
         except Exception as e:
             print(f"Could not upload battery heartbeat: {e}")
 
     def upload_imu(self, time, data):
-        (mag_x, mag_y, mag_z,
-         gyro_x, gyro_y, gyro_z) = data
+        (mag_x, mag_y, mag_z, gyro_x, gyro_y, gyro_z) = data
         upload = {
             "time": time,
             "mag_x": mag_x,

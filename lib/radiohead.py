@@ -1,5 +1,6 @@
 import time
 
+
 class RadioHead:
     def __init__(self, radio, receive_timeout) -> None:
         self.radio = radio
