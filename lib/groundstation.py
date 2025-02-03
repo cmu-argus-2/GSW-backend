@@ -77,9 +77,9 @@ class FIFOQueue:
 
 
 queue = FIFOQueue()
-queue.enqueue(0x46)
-queue.enqueue(0x4A)
-queue.enqueue(0x46)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
+queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
 # queue.enqueue(0x4B)
 # --------------------------------------------------------------------------- #
 
@@ -190,6 +190,7 @@ class GS:
                 # TODO: Check if queue has a valid message ID
                 # TODO: remove default - handled in CI 
                 if queue.is_empty():
+                    print("Queue is empty")
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                 else:
                     self.rq_cmd = queue.dequeue()
@@ -257,7 +258,13 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
+            if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+                self.transmit_SwitchToState()
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
+                self.transmit_ForceReboot()
+
+            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
                 self.transmit_Metadata()
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
@@ -371,10 +378,34 @@ class GS:
 
     # ----------------------- Transmitted Information ----------------------- #
     @classmethod
+    def transmit_SwitchToState(self):
+        # Set RQ message parameters to force a state change on SC
+        self.rq_cmd = MSG_ID.GS_CMD_SWITCH_TO_STATE
+        self.rq_sq = 0
+        self.rq_len = 5
+
+        # Temporary hardcoding for GS_CMD_SWITCH_TO_STATE
+        self.payload = ((0x01).to_bytes(1, 'big') + (20).to_bytes(4, 'big'))
+        print("Transmitting CMD: GS_CMD_SWITCH_TO_STATE")
+
+    @classmethod
+    def transmit_ForceReboot(self):
+        # Set RQ message parameters
+        self.rq_cmd = MSG_ID.GS_CMD_FORCE_REBOOT
+        self.rq_sq = 0
+        self.rq_len = 0
+
+        # No payload for this command
+        self.payload = bytearray()
+        print("Transmitting CMD: GS_CMD_FORCE_REBOOT")
+
+    @classmethod
     def transmit_Metadata(self):
         # Set RQ message parameters for MD request
         self.rq_sq = 0
         self.rq_len = 5
+
+        # Request specific file ID and time of creation
         self.payload = (self.file_id.to_bytes(1, "big") +
                         self.file_time.to_bytes(4, "big"))
         print("Transmitting CMD: GS_CMD_FILE_METADATA")
@@ -384,6 +415,8 @@ class GS:
         # Set RQ message parameters for PKT
         self.rq_sq = self.gs_msg_sq
         self.rq_len = 7
+
+        # Request specific file ID and time of creation
         self.payload = (
             self.file_id.to_bytes(1, "big")
             + self.file_time.to_bytes(4, "big")
