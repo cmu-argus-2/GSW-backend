@@ -4,7 +4,6 @@ from collections import deque
 
 import RPi.GPIO as GPIO
 
-import logger
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
 
@@ -289,8 +288,9 @@ class GS:
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
         else:
-            logger.warning (f"[COMMS ERROR] Not in TX state. In {self.state} ")
             self.state = GS_COMMS_STATE.RX
+            raise Exception (f"[COMMS ERROR] Not in TX state. In {self.state}")
+            
 
     # ------------------------ Received Information ------------------------- #
     @classmethod
