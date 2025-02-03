@@ -281,7 +281,7 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
 
-            print("Transmitted CMND. TX --> RX")
+            print("Transmitted CMD. TX --> RX")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
@@ -324,7 +324,7 @@ class GS:
     def received_Filepkt(self):
         # TODO: Check for file ID and file time
         # Message is file packet
-        print(f"Received pkt {self.rx_msg_sq} out of {self.file_target_sq}")
+        print(f"Received PKT {self.rx_msg_sq} out of {self.file_target_sq}")
         # print(self.rx_message[9:self.rx_msg_size + 9])
 
         # Check internal gs_msg_sq against rx_msg_sq
