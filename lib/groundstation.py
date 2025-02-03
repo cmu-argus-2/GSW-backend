@@ -12,13 +12,11 @@ GS state functions:
 receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
 """
 
-
 # Ground station state
 class GS_COMMS_STATE:
     RX = 0x00
     TX = 0x01
     DB_RW = 0x02
-
 
 # Message ID database for communication protocol
 class MSG_ID:
