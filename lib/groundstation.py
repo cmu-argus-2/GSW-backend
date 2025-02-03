@@ -4,6 +4,7 @@ from collections import deque
 
 import RPi.GPIO as GPIO
 
+import logger
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
 
@@ -164,7 +165,7 @@ class GS:
 
             # Check if we need to start file transfer sequence
             if self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
-                print("DB_RW: msg.id == SAT_FILE_METADATA")
+                print("DB_RW: msg.id: SAT_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
                 if (
@@ -288,7 +289,7 @@ class GS:
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
         else:
-            print(f"Not in TX. Currently in {self.state}")
+            logger.warning (f"[COMMS ERROR] Not in TX state. In {self.state} ")
             self.state = GS_COMMS_STATE.RX
 
     # ------------------------ Received Information ------------------------- #
