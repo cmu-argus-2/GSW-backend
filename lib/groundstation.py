@@ -3,21 +3,23 @@ import time
 from collections import deque
 
 import RPi.GPIO as GPIO
+from database import db_services
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
-from database import db_services
 
 """
 GS state functions:
 receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
 """
 
+
 # Ground station state
 class GS_COMMS_STATE:
     RX = 0x00
     TX = 0x01
     DB_RW = 0x02
+
 
 # Message ID database for communication protocol
 class MSG_ID:
@@ -134,12 +136,9 @@ class GS:
 
     @classmethod
     def unpack_header(self):
-        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]),
-                                        byteorder="big")
-        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3],
-                                        byteorder="big")
-        self.rx_msg_size = int.from_bytes(self.rx_message[3:4],
-                                          byteorder="big")
+        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
+        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
 
     @classmethod
     def unpack_message(self):
@@ -190,7 +189,7 @@ class GS:
             else:
                 # Dequeue the next command
                 # TODO: Check if queue has a valid message ID
-                # TODO: remove default - handled in CI 
+                # TODO: remove default - handled in CI
                 if queue.is_empty():
                     print("Queue is empty")
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
@@ -213,9 +212,7 @@ class GS:
         if rx_obj is not None:
             # Message from SAT
             self.rx_message = rx_obj.message
-            print(
-                f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}"
-            )
+            print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
             self.rx_time = time.monotonic()
 
             self.unpack_message()
@@ -263,7 +260,7 @@ class GS:
 
             if self.rq_cmd.command_id == MSG_ID.GS_CMD_SWITCH_TO_STATE:
                 self.transmit_SwitchToState()
-            
+
             elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
                 self.transmit_ForceReboot()
 
@@ -297,8 +294,7 @@ class GS:
 
         else:
             self.state = GS_COMMS_STATE.RX
-            raise Exception (f"[COMMS ERROR] Not in TX state. In {self.state}")
-            
+            raise Exception(f"[COMMS ERROR] Not in TX state. In {self.state}")
 
     # ------------------------ Received Information ------------------------- #
     @classmethod
@@ -315,14 +311,10 @@ class GS:
         print("**** Received file metadata ****")
 
         # Unpack file parameters
-        self.file_id = int.from_bytes((self.rx_message[4:5]),
-                                      byteorder="big")
-        self.file_time = int.from_bytes((self.rx_message[5:9]),
-                                        byteorder="big")
-        self.file_size = int.from_bytes((self.rx_message[9:13]),
-                                        byteorder="big")
-        self.file_target_sq = int.from_bytes((self.rx_message[13:15]),
-                                             byteorder="big")
+        self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder="big")
+        self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder="big")
+        self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder="big")
+        self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder="big")
 
         # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time},
         # Size: {self.file_size}, Message Count: {self.file_target_sq}")
@@ -344,7 +336,7 @@ class GS:
 
         else:
             # Append packet to file_array
-            self.file_array.append(self.rx_message[9: self.rx_msg_size + 9])
+            self.file_array.append(self.rx_message[9 : self.rx_msg_size + 9])
             # Increment sequence counter
             self.gs_msg_sq += 1
 
@@ -388,7 +380,7 @@ class GS:
         self.rq_len = 5
 
         # Temporary hardcoding for GS_CMD_SWITCH_TO_STATE
-        self.payload = ((0x01).to_bytes(1, 'big') + (20).to_bytes(4, 'big'))
+        self.payload = (0x01).to_bytes(1, "big") + (20).to_bytes(4, "big")
         print("Transmitting CMD: GS_CMD_SWITCH_TO_STATE")
 
     @classmethod
@@ -409,8 +401,9 @@ class GS:
         self.rq_len = 5
 
         # Request specific file ID and time of creation
-        self.payload = (self.file_id.to_bytes(1, "big") +
-                        self.file_time.to_bytes(4, "big"))
+        self.payload = self.file_id.to_bytes(1, "big") + self.file_time.to_bytes(
+            4, "big"
+        )
         print("Transmitting CMD: GS_CMD_FILE_METADATA")
 
     @classmethod
