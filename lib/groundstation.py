@@ -6,6 +6,7 @@ import RPi.GPIO as GPIO
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
+from database import db_services
 
 """
 GS state functions:
@@ -178,7 +179,8 @@ class GS:
                     if queue.is_empty():
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     else:
-                        self.rq_cmd = queue.dequeue()
+                        self.rq_cmd = db_services.get_latest_command()
+                        # self.rq_cmd = queue.dequeue()
 
                 else:
                     # Valid file on satellite
@@ -193,7 +195,8 @@ class GS:
                     print("Queue is empty")
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                 else:
-                    self.rq_cmd = queue.dequeue()
+                    self.rq_cmd = db_services.get_latest_command()
+                    # self.rq_cmd = queue.dequeue()
 
             self.state = GS_COMMS_STATE.TX
 
@@ -258,7 +261,7 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+            if self.rq_cmd.command_id == MSG_ID.GS_CMD_SWITCH_TO_STATE:
                 self.transmit_SwitchToState()
             
             elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
