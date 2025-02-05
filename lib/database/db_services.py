@@ -34,7 +34,7 @@ def commands_available():
     """Determine if there are commands available and queued up"""
     result = query(
         """
-        SELECT EXISTS (SELECT 1 FROM rxData_tb LIMIT 1);
+        SELECT EXISTS (SELECT 1 FROM txCommands_tb LIMIT 1);
         """
     )
     return result
