@@ -1,5 +1,6 @@
 from db_server import query
 from groundstation import MSG_ID
+from lib.telemetry.unpacking import TelemetryUnpacker
 import json
 
 
@@ -50,9 +51,9 @@ def handle_command_ACK(ack):
         pass
 
 
-def add_Telemetry(msg_data):
+def add_Telemetry():
     """A query to insert a new Heartbeat packet into the database (RX table)"""
-    # jsonb_data = json.dumps(msg_data)
+    msg_data = json.dumps(TelemetryUnpacker.get_heartbeat())
 
     # TODO: do for other types of telemetry
     result = query(
@@ -81,6 +82,7 @@ def add_Ack(msg_data=None):
     )
     
 def add_File_Meta_Data(msg_data=None):
+    file_MD = json.dumps(msg_data)
     result = query(
         """
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
@@ -91,7 +93,7 @@ def add_File_Meta_Data(msg_data=None):
             %s::jsonb
         );
         """,
-        ('SAT_FILE_METADATA', MSG_ID.SAT_FILE_METADATA, 'file', msg_data)
+        ('SAT_FILE_METADATA', MSG_ID.SAT_FILE_METADATA, 'file', file_MD)
     )
 
 def add_downlink_data(data_type, args_list=None):

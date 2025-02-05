@@ -264,3 +264,20 @@ class TelemetryUnpacker:
         print("GPS Data:", self._data_GPS)
         print("THERMAL Data:", self._data_THERMAL)
         print()
+
+    @classmethod
+    def get_heartbeat(self):
+        heartbeat = {
+            "msg_id": self._msg_id,
+            "seq_cnt": self._seq_cnt, 
+            "size": self._size,
+            "CDH": self._data_CDH, 
+            "EPS": self._data_EPS, 
+            "ADCS": self._data_ADCS, 
+            "GPS": self._data_GPS, 
+            "THERMAL": self._data_THERMAL
+        }
+
+        return heartbeat
+
+

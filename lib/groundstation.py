@@ -175,11 +175,12 @@ class GS:
 
                     # Dequeue the next command
                     # TODO: Check if queue has a valid message ID
-                    if queue.is_empty():
+                    if (db_services.commands_available()): # if db is empty 
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     else:
-                        self.rq_cmd = db_services.get_latest_command()
+                        self.rq_cmd = db_services.get_latest_command() # get top of the queue
                         # self.rq_cmd = queue.dequeue()
+                        db_services.remove_latest_command()
 
                 else:
                     # Valid file on satellite
@@ -187,15 +188,20 @@ class GS:
                     self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
 
             else:
+                db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
+
                 # Dequeue the next command
                 # TODO: Check if queue has a valid message ID
                 # TODO: remove default - handled in CI
-                if queue.is_empty():
-                    print("Queue is empty")
+                if (db_services.commands_available() == None): #if db is empty 
+                    print("CI is empty")
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                 else:
                     self.rq_cmd = db_services.get_latest_command()
                     # self.rq_cmd = queue.dequeue()
+                    db_services.remove_latest_command()
+
+                
 
             self.state = GS_COMMS_STATE.TX
 
@@ -258,7 +264,7 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if self.rq_cmd.command_id == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+            if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
                 self.transmit_SwitchToState()
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
@@ -302,8 +308,10 @@ class GS:
         # Message is a heartbeat with TM frame, unpack
         TelemetryUnpacker.unpack_tm_frame(self.rx_message)
         print("**** Received HB ****")
+        db_services.add_Telemetry()
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
+
 
     @classmethod
     def received_Metadata(self):
@@ -318,7 +326,7 @@ class GS:
 
         # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time},
         # Size: {self.file_size}, Message Count: {self.file_target_sq}")
-
+        db_services.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq ])
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
@@ -368,6 +376,7 @@ class GS:
     @classmethod
     def received_Ack(self):
         print(f"**** Received an ACK {self.rx_message} ****")
+        db_services.add_Ack()
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
