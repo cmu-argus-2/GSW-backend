@@ -3,7 +3,7 @@ import time
 from collections import deque
 
 import RPi.GPIO as GPIO
-from database import db_services
+from lib.database import db_services
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
