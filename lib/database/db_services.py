@@ -1,5 +1,5 @@
-from db_server import query
-from groundstation import MSG_ID
+from lib.database.db_server import query
+# from groundstation import MSG_ID
 from lib.telemetry.unpacking import TelemetryUnpacker
 import json
 
@@ -13,7 +13,11 @@ def get_latest_command():
         LIMIT 1;
     """
     )
-    return result[0] if result else None
+    print ("Reult:", result)
+    if result[1] != []: 
+        return result[1][0][1]
+    else:
+        return 70
 
 
 def remove_latest_command():
@@ -44,7 +48,7 @@ def handle_command_ACK(ack):
     """If SC sends an ack for a command, we need to handle successful and failed executions of commands.
     If successful, remove from the command queue (TX table).
     """
-    if ack == MSG_ID.SAT_ACK:
+    if ack == 0x0F:
         remove_latest_command()
     else:
         # TODO: Think about what to do if failed, resend command?
@@ -61,7 +65,7 @@ def add_Telemetry():
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
         VALUES (%s, %s, %s, %s::jsonb);
         """,
-        ('SAT_HEARTBEAT', MSG_ID.SAT_HEARTBEAT, 'telemetry', msg_data) 
+        ('SAT_HEARTBEAT', 0x01, 'telemetry', msg_data) 
     )
 
     
@@ -78,7 +82,7 @@ def add_Ack(msg_data=None):
             }'::jsonb
         );
         """,
-        ('SAT_ACK', MSG_ID.SAT_ACK, 'ack') 
+        ('SAT_ACK', 0x0F, 'ack') 
     )
     
 def add_File_Meta_Data(msg_data=None):
@@ -93,20 +97,20 @@ def add_File_Meta_Data(msg_data=None):
             %s::jsonb
         );
         """,
-        ('SAT_FILE_METADATA', MSG_ID.SAT_FILE_METADATA, 'file', file_MD)
+        ('SAT_FILE_METADATA', 0x10, 'file', file_MD)
     )
 
-def add_downlink_data(data_type, args_list=None):
-    """Handle adding data that was downlinked to the database (RX table)"""
+# def add_downlink_data(data_type, args_list=None):
+#     """Handle adding data that was downlinked to the database (RX table)"""
 
-    # Insert TM frames into db
-    if data_type == MSG_ID.SAT_HEARTBEAT or data_type == MSG_ID.SAT_TM_HAL or data_type == MSG_ID.SAT_TM_PAYLOAD or MSG_ID.SAT_TM_STORAGE:
-        add_Telemetry(args_list)
+#     # Insert TM frames into db
+#     if data_type == MSG_ID.SAT_HEARTBEAT or data_type == MSG_ID.SAT_TM_HAL or data_type == MSG_ID.SAT_TM_PAYLOAD or MSG_ID.SAT_TM_STORAGE:
+#         add_Telemetry(args_list)
 
-    # Insert file metadata into db
-    elif data_type == MSG_ID.SAT_FILE_METADATA:
-        add_File_Meta_Data()
+#     # Insert file metadata into db
+#     elif data_type == MSG_ID.SAT_FILE_METADATA:
+#         add_File_Meta_Data()
     
-    #Insert ACK into db
-    elif data_type == MSG_ID.SAT_ACK:
-        add_Ack()
+#     #Insert ACK into db
+#     elif data_type == MSG_ID.SAT_ACK:
+#         add_Ack()

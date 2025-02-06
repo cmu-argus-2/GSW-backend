@@ -179,8 +179,9 @@ class GS:
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     else:
                         self.rq_cmd = db_services.get_latest_command() # get top of the queue
+                        print ("Latest Command2:", self.rq_cmd)
                         # self.rq_cmd = queue.dequeue()
-                        db_services.remove_latest_command()
+                        # db_services.remove_latest_command()
 
                 else:
                     # Valid file on satellite
@@ -188,7 +189,7 @@ class GS:
                     self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
 
             else:
-                db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
+                # db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
 
                 # Dequeue the next command
                 # TODO: Check if queue has a valid message ID
@@ -198,6 +199,7 @@ class GS:
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                 else:
                     self.rq_cmd = db_services.get_latest_command()
+                    print ("Latest Command1:", self.rq_cmd)
                     # self.rq_cmd = queue.dequeue()
                     db_services.remove_latest_command()
 
@@ -265,6 +267,7 @@ class GS:
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
             if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+                print ("hi")
                 self.transmit_SwitchToState()
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
