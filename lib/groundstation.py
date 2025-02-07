@@ -78,7 +78,7 @@ class FIFOQueue:
 
 queue = FIFOQueue()
 queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
 queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
 # queue.enqueue(0x4B)
 # --------------------------------------------------------------------------- #
