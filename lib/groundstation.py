@@ -373,7 +373,7 @@ class GS:
             self.state = GS_COMMS_STATE.TX
         else:
             print("**** Received all packets. RX --> DB_RW ****")
-            db.services.add_File_Packet(self.file_array, self.file_id)
+            db_services.add_File_Packet(self.file_array, self.file_id)
             self.state = GS_COMMS_STATE.DB_RW
             self.database_readwrite()
 

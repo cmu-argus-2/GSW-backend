@@ -24,7 +24,7 @@ try:
     db.autocommit = True
 except Exception as e:
     print("Database connection error:", e)
-    exit(-1)
+    # exit(-1)
 
 
 def query(text, params=None):

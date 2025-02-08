@@ -86,7 +86,13 @@ def add_Ack(msg_data=None):
     )
     
 def add_File_Meta_Data(msg_data):
-    file_MD = json.dumps(msg_data)
+    msg_obj = {
+        "file_id":msg_data[0],
+        "file_time": msg_data[1],
+        "file_size": msg_data[2],
+        "file_rq_sq":msg_data[3]
+    }
+    file_MD = json.dumps(msg_obj)
     result = query(
         """
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
@@ -100,19 +106,21 @@ def add_File_Meta_Data(msg_data):
         ('SAT_FILE_METADATA', 0x10, 'file', file_MD)
     )
 
-def add_File_Packet(msg_data, file_id):
-    file_pkt = json.dumps(msg_data)
+def add_File_Packet(msg_data, file_id, file_name):
+    encoded_list = [data.hex() for data in msg_data]
+    file_pkt = json.dumps(encoded_list)
+    print(file_pkt)
     result = query(
-        """"
+        """
         UPDATE rxData_tb
         SET rx_data = jsonb_set(
             rx_data, 
             '{file_packets}', 
-            %s::jsonb
+            %s
         )
         WHERE rx_data->>'file_id' = %s;
         """,
-        (file_pkt, file_id)
+        (file_pkt, str(file_id))
     )
 
 # def add_downlink_data(data_type, args_list=None):
