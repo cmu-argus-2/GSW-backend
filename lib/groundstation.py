@@ -126,6 +126,7 @@ class GS:
     file_size = 0x00
     file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
     flag_rq_file = False  # testing in the lab - once the image is received
+    filename = ""
 
     # File TX parameters
     gs_msg_sq = 0  # if file is multiple packets - number of packets received
@@ -354,8 +355,8 @@ class GS:
         # Compare gs_msg_sq to file_target_sq
         if self.gs_msg_sq == self.file_target_sq:
             # Write file to memory
-            filename = "test_image.jpg"
-            write_bytes = open(filename, "wb")
+            self.filename = "test_image.jpg"
+            write_bytes = open(self.filename, "wb")
 
             # Write all bytes to the file
             for i in range(self.file_target_sq):
@@ -373,7 +374,7 @@ class GS:
             self.state = GS_COMMS_STATE.TX
         else:
             print("**** Received all packets. RX --> DB_RW ****")
-            db_services.add_File_Packet(self.file_array, self.file_id)
+            db_services.add_File_Packet(self.file_array, self.file_id, self.filename)
             self.state = GS_COMMS_STATE.DB_RW
             self.database_readwrite()
 
