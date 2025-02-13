@@ -310,7 +310,7 @@ class GS:
     @classmethod
     def received_Heartbeat(self):
         # Message is a heartbeat with TM frame, unpack
-        TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+        TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
         print("**** Received HB ****")
         db_services.add_Telemetry()
         self.state = GS_COMMS_STATE.DB_RW

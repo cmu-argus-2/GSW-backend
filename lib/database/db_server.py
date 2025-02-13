@@ -16,6 +16,7 @@ DB_CONFIG = {
     "host": os.getenv("PG_HOST"),
     "port": os.getenv("PG_PORT"),
     "dbname": os.getenv("PG_DATABASE"),
+    "connect_timeout": 1, # Set timeout to 1 second
 }
 
 # Connect to Database

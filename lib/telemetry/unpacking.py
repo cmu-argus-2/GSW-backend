@@ -5,9 +5,10 @@ GS Telemetry Unpacker
 from lib.telemetry.constants import *
 from lib.telemetry.helpers import *
 
+# Const IDX numbers
 CDH_NUM = 8
 EPS_NUM = 41
-ADCS_NUM = 32
+ADCS_NUM = 31
 GPS_NUM = 21
 THERMAL_NUM = 4
 
@@ -24,7 +25,7 @@ class TelemetryUnpacker:
     _data_THERMAL = [0] * THERMAL_NUM
 
     @classmethod
-    def unpack_tm_frame(self, msg):
+    def unpack_tm_frame_nominal(self, msg):
         """
         Unpack TM frame received from satellite and put data
         in vectors for each onboard subsystem.
@@ -42,7 +43,7 @@ class TelemetryUnpacker:
             raise RuntimeError("Message is not TM frame")
         if self._seq_cnt != 0:
             raise RuntimeError("Message seq. count incorrect")
-        if self._size != 230:
+        if self._size != 229:
             raise RuntimeError("Message length incorrect")
 
         ############ CDH Fields ############
@@ -129,54 +130,52 @@ class TelemetryUnpacker:
         self._data_ADCS[ADCS_IDX.SUN_VEC_Y] = convert_fixed_point_to_float_hp(msg[130:134])
         self._data_ADCS[ADCS_IDX.SUN_VEC_Z] = convert_fixed_point_to_float_hp(msg[134:138])
 
-        self._data_ADCS[ADCS_IDX.ECLIPSE] = msg[138]
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XP] = unpack_signed_short_int(msg[138:140])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XM] = unpack_signed_short_int(msg[140:142])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YP] = unpack_signed_short_int(msg[142:144])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YM] = unpack_signed_short_int(msg[144:146])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP1] = unpack_signed_short_int(msg[146:148])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP2] = unpack_signed_short_int(msg[148:150])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP3] = unpack_signed_short_int(msg[150:152])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP4] = unpack_signed_short_int(msg[152:154])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZM] = unpack_signed_short_int(msg[154:156])
 
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XP] = unpack_signed_short_int(msg[139:141])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XM] = unpack_signed_short_int(msg[141:143])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YP] = unpack_signed_short_int(msg[143:145])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YM] = unpack_signed_short_int(msg[145:147])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP1] = unpack_signed_short_int(msg[147:149])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP2] = unpack_signed_short_int(msg[149:151])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP3] = unpack_signed_short_int(msg[151:153])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP4] = unpack_signed_short_int(msg[153:155])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZM] = unpack_signed_short_int(msg[155:157])
+        self._data_ADCS[ADCS_IDX.XP_COIL_STATUS] = msg[156]
+        self._data_ADCS[ADCS_IDX.XM_COIL_STATUS] = msg[157]
+        self._data_ADCS[ADCS_IDX.YP_COIL_STATUS] = msg[158]
+        self._data_ADCS[ADCS_IDX.YM_COIL_STATUS] = msg[159]
+        self._data_ADCS[ADCS_IDX.ZP_COIL_STATUS] = msg[160]
+        self._data_ADCS[ADCS_IDX.ZM_COIL_STATUS] = msg[161]
 
-        self._data_ADCS[ADCS_IDX.XP_COIL_STATUS] = msg[157]
-        self._data_ADCS[ADCS_IDX.XM_COIL_STATUS] = msg[158]
-        self._data_ADCS[ADCS_IDX.YP_COIL_STATUS] = msg[159]
-        self._data_ADCS[ADCS_IDX.YM_COIL_STATUS] = msg[160]
-        self._data_ADCS[ADCS_IDX.ZP_COIL_STATUS] = msg[161]
-        self._data_ADCS[ADCS_IDX.ZM_COIL_STATUS] = msg[162]
-
-        self._data_ADCS[ADCS_IDX.COARSE_ATTITUDE_QW] = convert_fixed_point_to_float_hp(msg[163:167])
-        self._data_ADCS[ADCS_IDX.COARSE_ATTITUDE_QX] = convert_fixed_point_to_float_hp(msg[167:171])
-        self._data_ADCS[ADCS_IDX.COARSE_ATTITUDE_QY] = convert_fixed_point_to_float_hp(msg[171:175])
-        self._data_ADCS[ADCS_IDX.COARSE_ATTITUDE_QZ] = convert_fixed_point_to_float_hp(msg[175:179])
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QW] = convert_fixed_point_to_float_hp(msg[162:166])
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QX] = convert_fixed_point_to_float_hp(msg[166:170])
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QY] = convert_fixed_point_to_float_hp(msg[170:174])
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QZ] = convert_fixed_point_to_float_hp(msg[174:178])
 
         ############ GPS Fields ############
-        self._data_GPS[GPS_IDX.GPS_MESSAGE_ID] = msg[179]
-        self._data_GPS[GPS_IDX.GPS_FIX_MODE] = msg[180]
-        self._data_GPS[GPS_IDX.GPS_NUMBER_OF_SV] = msg[181]
+        self._data_GPS[GPS_IDX.GPS_MESSAGE_ID] = msg[178]
+        self._data_GPS[GPS_IDX.GPS_FIX_MODE] = msg[179]
+        self._data_GPS[GPS_IDX.GPS_NUMBER_OF_SV] = msg[180]
 
-        self._data_GPS[GPS_IDX.GPS_GNSS_WEEK] = unpack_unsigned_short_int(msg[182:184])
-        self._data_GPS[GPS_IDX.GPS_GNSS_TOW] = unpack_unsigned_long_int(msg[184:188])
+        self._data_GPS[GPS_IDX.GPS_GNSS_WEEK] = unpack_unsigned_short_int(msg[181:183])
+        self._data_GPS[GPS_IDX.GPS_GNSS_TOW] = unpack_unsigned_long_int(msg[183:187])
 
-        self._data_GPS[GPS_IDX.GPS_LATITUDE] = unpack_signed_long_int(msg[188:192])
-        self._data_GPS[GPS_IDX.GPS_LONGITUDE] = unpack_signed_long_int(msg[192:196])
-        self._data_GPS[GPS_IDX.GPS_ELLIPSOID_ALT] = unpack_signed_long_int(msg[196:200])
-        self._data_GPS[GPS_IDX.GPS_MEAN_SEA_LVL_ALT] = unpack_signed_long_int(msg[200:204])
+        self._data_GPS[GPS_IDX.GPS_LATITUDE] = unpack_signed_long_int(msg[187:191])
+        self._data_GPS[GPS_IDX.GPS_LONGITUDE] = unpack_signed_long_int(msg[191:195])
+        self._data_GPS[GPS_IDX.GPS_ELLIPSOID_ALT] = unpack_signed_long_int(msg[195:199])
+        self._data_GPS[GPS_IDX.GPS_MEAN_SEA_LVL_ALT] = unpack_signed_long_int(msg[199:203])
 
-        self._data_GPS[GPS_IDX.GPS_ECEF_X] = unpack_signed_long_int(msg[204:208])
-        self._data_GPS[GPS_IDX.GPS_ECEF_Y] = unpack_signed_long_int(msg[208:212])
-        self._data_GPS[GPS_IDX.GPS_ECEF_Z] = unpack_signed_long_int(msg[212:216])
-        self._data_GPS[GPS_IDX.GPS_ECEF_VX] = unpack_signed_long_int(msg[216:220])
-        self._data_GPS[GPS_IDX.GPS_ECEF_VY] = unpack_signed_long_int(msg[220:224])
-        self._data_GPS[GPS_IDX.GPS_ECEF_VZ] = unpack_signed_long_int(msg[224:228])
+        self._data_GPS[GPS_IDX.GPS_ECEF_X] = unpack_signed_long_int(msg[203:207])
+        self._data_GPS[GPS_IDX.GPS_ECEF_Y] = unpack_signed_long_int(msg[207:211])
+        self._data_GPS[GPS_IDX.GPS_ECEF_Z] = unpack_signed_long_int(msg[211:215])
+        self._data_GPS[GPS_IDX.GPS_ECEF_VX] = unpack_signed_long_int(msg[215:219])
+        self._data_GPS[GPS_IDX.GPS_ECEF_VY] = unpack_signed_long_int(msg[219:223])
+        self._data_GPS[GPS_IDX.GPS_ECEF_VZ] = unpack_signed_long_int(msg[223:227])
 
         ############ Thermal Fields ############
-        self._data_THERMAL[THERMAL_IDX.IMU_TEMPERATURE] = unpack_unsigned_short_int(msg[228:230]) / 100
-        self._data_THERMAL[THERMAL_IDX.CPU_TEMPERATURE] = unpack_unsigned_short_int(msg[230:232]) / 100
-        self._data_THERMAL[THERMAL_IDX.BATTERY_PACK_TEMPERATURE] = unpack_unsigned_short_int(msg[232:234])
+        self._data_THERMAL[THERMAL_IDX.IMU_TEMPERATURE] = unpack_unsigned_short_int(msg[227:229]) / 100
+        self._data_THERMAL[THERMAL_IDX.CPU_TEMPERATURE] = unpack_unsigned_short_int(msg[229:231]) / 100
+        self._data_THERMAL[THERMAL_IDX.BATTERY_PACK_TEMPERATURE] = unpack_unsigned_short_int(msg[231:233])
 
         # TODO: Remove temp debugging
         print()
