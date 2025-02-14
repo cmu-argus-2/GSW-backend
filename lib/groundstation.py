@@ -1,6 +1,7 @@
 import datetime
 import time
-import config
+import time
+import lib.config as config
 from collections import deque
 
 import RPi.GPIO as GPIO
