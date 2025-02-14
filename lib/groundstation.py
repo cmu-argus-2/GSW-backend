@@ -1,5 +1,6 @@
 import datetime
 import time
+import config
 from collections import deque
 
 import RPi.GPIO as GPIO
@@ -13,6 +14,10 @@ GS state functions:
 receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
 """
 
+if config.MODE == "DBG":
+    print("Debug Mode: Executing debug-specific code")
+elif config.MODE == "DB":
+    print("Database Mode: Executing database-specific code")
 
 # Ground station state
 class GS_COMMS_STATE:
@@ -56,35 +61,6 @@ class MSG_ID:
     # GS commands SC responds to with file MD or packets
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
-
-
-# -------------------- TODO: replace with Database functions ---------------- #
-# Mockup of Database
-class FIFOQueue:
-    def __init__(self):
-        self.queue = deque()
-
-    def enqueue(self, item):
-        self.queue.append(item)
-
-    def dequeue(self):
-        if self.is_empty():
-            return "Queue is empty"
-        return self.queue.popleft()
-
-    def is_empty(self):
-        return len(self.queue) == 0
-
-    def size(self):
-        return len(self.queue)
-
-
-queue = FIFOQueue()
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-# queue.enqueue(0x4B)
-# --------------------------------------------------------------------------- #
 
 
 class GS:
@@ -174,15 +150,23 @@ class GS:
                     # No file on satellite
                     self.flag_rq_file = False
 
-                    # Dequeue the next command
+
                     # TODO: Check if queue has a valid message ID
-                    if (db_services.commands_available()): # if db is empty 
-                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    else:
-                        self.rq_cmd = db_services.get_latest_command() # get top of the queue
-                        print ("Latest Command2:", self.rq_cmd)
-                        # self.rq_cmd = queue.dequeue()
-                        # db_services.remove_latest_command()
+                    if (config.MODE == "DB"):
+                        if (db_services.commands_available()): # if db is empty 
+                            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                        else:
+                            self.rq_cmd = db_services.get_latest_command() # get top of the queue
+                            print ("Latest Command2:", self.rq_cmd)
+                            # db_services.remove_latest_command()
+
+
+                    # TODO: Check if queue has a valid message ID
+                    elif (config.MODE == "DBG"):
+                        if queue.is_empty():
+                            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                        else:
+                            self.rq_cmd = queue.dequeue()
 
                 else:
                     # Valid file on satellite
@@ -191,20 +175,23 @@ class GS:
 
             else:
                 # db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
+                if (config.MODE == "DB"):
+                    # TODO: Check if queue has a valid message ID
+                    # TODO: remove default - handled in CI
+                    if (db_services.commands_available() == None): #if db is empty 
+                        print("CI is empty")
+                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    else:
+                        self.rq_cmd = db_services.get_latest_command()
+                        print ("Latest Command1:", self.rq_cmd)
+                        db_services.remove_latest_command()
 
-                # Dequeue the next command
-                # TODO: Check if queue has a valid message ID
-                # TODO: remove default - handled in CI
-                if (db_services.commands_available() == None): #if db is empty 
-                    print("CI is empty")
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                else:
-                    self.rq_cmd = db_services.get_latest_command()
-                    print ("Latest Command1:", self.rq_cmd)
-                    # self.rq_cmd = queue.dequeue()
-                    db_services.remove_latest_command()
 
-                
+                elif (config.MODE == "DBG"):
+                    if queue.is_empty():
+                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    else:
+                        self.rq_cmd = queue.dequeue()
 
             self.state = GS_COMMS_STATE.TX
 
@@ -312,7 +299,12 @@ class GS:
         # Message is a heartbeat with TM frame, unpack
         TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
         print("**** Received HB ****")
-        db_services.add_Telemetry()
+
+        if (config.MODE == "DB"):
+                db_services.add_Telemetry()
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"TEL:{self.rx_message}")
+
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
@@ -328,9 +320,11 @@ class GS:
         self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder="big")
         self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder="big")
 
-        # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time},
-        # Size: {self.file_size}, Message Count: {self.file_target_sq}")
-        db_services.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq ])
+        if (config.MODE == "DB"):
+                db_services.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq])
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
+
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
@@ -374,14 +368,25 @@ class GS:
             self.state = GS_COMMS_STATE.TX
         else:
             print("**** Received all packets. RX --> DB_RW ****")
-            db_services.add_File_Packet(self.file_array, self.file_id, self.filename)
+
+            if (config.MODE == "DB"):
+                 db_services.add_File_Packet(self.file_array, self.file_id, self.filename)
+            elif (config.MODE == "DBG"):
+                db_queue.enqueue(f"PKT:{self.file_array},{self.file_id}, {self.filename}")
+        
+ 
             self.state = GS_COMMS_STATE.DB_RW
             self.database_readwrite()
 
     @classmethod
     def received_Ack(self):
         print(f"**** Received an ACK {self.rx_message} ****")
-        db_services.add_Ack()
+
+        if (config.MODE == "DB"):
+            db_services.add_Ack()
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"ACK:{self.rx_message}")
+
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
@@ -433,3 +438,37 @@ class GS:
             + self.rq_sq.to_bytes(2, "big")
         )
         print("Transmitting CMD: GS_CMD_FILE_PKT")
+
+
+
+# -------------------- TODO: replace with Database functions ---------------- #
+# Mockup of Command Interface
+class fifoQ:
+    def __init__(self):
+        self.queue = deque()
+
+    def enqueue(self, item):
+        self.queue.append(item)
+
+    def dequeue(self):
+        if self.is_empty():
+            return "Queue is empty"
+        return self.queue.popleft()
+
+    def is_empty(self):
+        return len(self.queue) == 0
+
+    def size(self):
+        return len(self.queue)
+
+# Command Interface Instantiation 
+queue = fifoQ()
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
+queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
+# queue.enqueue(0x4B)
+
+# Database Queue Instantiation
+db_queue = fifoQ()
+
+# --------------------------------------------------------------------------- #
