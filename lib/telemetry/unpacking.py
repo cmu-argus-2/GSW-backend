@@ -11,6 +11,7 @@ EPS_NUM = 41
 ADCS_NUM = 31
 GPS_NUM = 21
 THERMAL_NUM = 4
+STORAGE_NUM = 19 
 
 
 class TelemetryUnpacker:
@@ -23,6 +24,7 @@ class TelemetryUnpacker:
     _data_ADCS = [0] * ADCS_NUM
     _data_GPS = [0] * GPS_NUM
     _data_THERMAL = [0] * THERMAL_NUM
+    _data_STORAGE = [0] * STORAGE_NUM
 
     @classmethod
     def unpack_tm_frame_nominal(self, msg):
@@ -202,4 +204,79 @@ class TelemetryUnpacker:
 
         return heartbeat
 
+    @classmethod
+    def unpack_tm_frame_storage(self, msg):
+        """
+        Unpack TM frame storage received from satellite and put data
+        in vectors for each onboard subsystem.
+        """
+
+        msg = list(msg)
+
+        ############ TM Metadata ############
+        self._msg_id = msg[0]
+        self._seq_cnt = unpack_unsigned_short_int(msg[1:3])
+        self._size = msg[3]
+
+        # Sanity checks for message type and length
+        if self._msg_id != 0x04:
+            raise RuntimeError("Message is not TM storage frame")
+        if self._seq_cnt != 0:
+            raise RuntimeError("Message seq. count incorrect")
+        # if self._size != 229: # TODO!
+        #     raise RuntimeError("Message length incorrect")
+
+        ############ CDH Fields ############
+        self._data_CDH[CDH_IDX.TIME] = unpack_unsigned_long_int(msg[4:8])
+        self._data_CDH[CDH_IDX.SC_STATE] = msg[8]
+        self._data_CDH[CDH_IDX.SD_USAGE] = unpack_unsigned_long_int(msg[9:13])
+        self._data_CDH[CDH_IDX.CURRENT_RAM_USAGE] = msg[13]
+        self._data_CDH[CDH_IDX.REBOOT_COUNT] = msg[14]
+        self._data_CDH[CDH_IDX.WATCHDOG_TIMER] = msg[15]
+        self._data_CDH[CDH_IDX.HAL_BITFLAGS] = msg[16]
+        self._data_CDH[CDH_IDX.DETUMBLING_ERROR_FLAG] = msg[17]
+
+        ############ Total Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.TOTAL] = msg[18:22]
+
+        ############ CDH Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.CDH_NUM_FILES] = msg[22:26]
+        self._data_STORAGE[STORAGE_IDX.CDH_DIR_SIZE] = msg[26:30]
+
+
+        
+
+    @classmethod
+    def unpack_tm_frame_HAL(self,msg):
+        """
+        Unpack TM frame HAL received from satellite and put data
+        in vectors for each onboard subsystem.
+        """
+
+        msg = list(msg)
+
+        ############ TM Metadata ############
+        self._msg_id = msg[0]
+        self._seq_cnt = unpack_unsigned_short_int(msg[1:3])
+        self._size = msg[3]
+
+        if self._msg_id != 0x03:
+            raise RuntimeError("Message is not TM HAL frame")
+        if self._seq_cnt != 0:
+            raise RuntimeError("Message seq. count incorrect")
+
+        ############ CDH Fields ############
+        self._data_CDH[CDH_IDX.TIME] = unpack_unsigned_long_int(msg[4:8])
+        self._data_CDH[CDH_IDX.SC_STATE] = msg[8]
+        self._data_CDH[CDH_IDX.SD_USAGE] = unpack_unsigned_long_int(msg[9:13])
+        self._data_CDH[CDH_IDX.CURRENT_RAM_USAGE] = msg[13]
+        self._data_CDH[CDH_IDX.REBOOT_COUNT] = msg[14]
+        self._data_CDH[CDH_IDX.WATCHDOG_TIMER] = msg[15]
+        self._data_CDH[CDH_IDX.HAL_BITFLAGS] = msg[16]
+        self._data_CDH[CDH_IDX.DETUMBLING_ERROR_FLAG] = msg[17]
+
+        # TODO: Remove temp debugging
+        print()
+        print("Metadata (ID, SQ_CNT, LEN):", self._msg_id, self._seq_cnt, self._size)
+        print("CDH Data:", self._data_CDH)
 

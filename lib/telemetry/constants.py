@@ -141,3 +141,11 @@ class THERMAL_IDX:
 
 class PAYLOAD_IDX:
     pass
+
+class STORAGE_IDX:
+    TOTAL = const(0)
+    CDH_NUM_FILES = const(1)
+    CDH_DIR_SIZE = const(2)
+    EPS_NUM_FILES = const(3)
+    EPS_DIR_SIZE = const(4)
+

@@ -16,13 +16,14 @@ DB_CONFIG = {
     "host": os.getenv("PG_HOST"),
     "port": os.getenv("PG_PORT"),
     "dbname": os.getenv("PG_DATABASE"),
-    "connect_timeout": 1, # Set timeout to 1 second
+    "connect_timeout": 5, # Set timeout to 5 seconds
 }
 
 # Connect to Database
 try:
     db = psycopg2.connect(**DB_CONFIG)
     db.autocommit = True
+    print("Database connected")
 except Exception as e:
     print("Database connection error:", e)
     # exit(-1)

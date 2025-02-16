@@ -32,13 +32,21 @@ class MSG_ID:
     Comms message IDs that are downlinked during the mission
     """
 
+    # Source header ID for Argus - THIS MUST BE UNIQUE FOR EACH SPACECRAFT
+    ARGUS_1_ID = 0x01
+    ARGUS_2_ID = 0x02
+
+    # Source header ID for GS
+    GS_ID = 0x04
+
     # SAT heartbeat, nominally downlinked in orbit
     SAT_HEARTBEAT = 0x01
 
     # SAT TM frames, requested by GS
-    SAT_TM_HAL = 0x02
-    SAT_TM_STORAGE = 0x03
-    SAT_TM_PAYLOAD = 0x04
+    SAT_TM_NOMINAL = 0x02
+    SAT_TM_HAL     = 0x03
+    SAT_TM_STORAGE = 0x04
+    SAT_TM_PAYLOAD = 0x05
 
     # SAT ACK, in response to GS commands
     SAT_ACK = 0x0F
@@ -54,9 +62,17 @@ class MSG_ID:
     # GS commands SC responds to with an ACK
     GS_CMD_FORCE_REBOOT = 0x40
     GS_CMD_SWITCH_TO_STATE = 0x41
+    GS_CMD_UPLINK_TIME_REFERENCE = 0x42
+    GS_CMD_UPLINK_ORBIT_REFERENCE = 0x43
+    GS_CMD_TURN_OFF_PAYLOAD = 0x44
+    GS_CMD_SCHEDULE_OD_EXPERIMENT = 0x45
+    GS_CMD_DOWNLINK_ALL_FILES = 0x4D
 
     # GS commands SC responds to with a frame
     GS_CMD_REQUEST_TM_HEARTBEAT = 0x46
+    GS_CMD_REQUEST_TM_HAL = 0x47
+    GS_CMD_REQUEST_TM_STORAGE = 0x48
+    GS_CMD_REQUEST_TM_PAYLOAD = 0x49
 
     # GS commands SC responds to with file MD or packets
     GS_CMD_FILE_METADATA = 0x4A
@@ -81,6 +97,10 @@ class GS:
 
     # State ground station
     state = GS_COMMS_STATE.RX
+
+    # Source header parameters
+    rx_src_id = 0x00
+    rx_dst_id = 0x00
 
     # RX message parameters
     # received msg parameters
@@ -113,9 +133,20 @@ class GS:
 
     @classmethod
     def unpack_header(self):
+        # Unpack source header
+        # self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        # self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
+        # self.rx_message = self.rx_message[2:]
+
+        # # TODO: Error checking based on source header
+        # print("Source Header:", self.rx_src_id, self.rx_dst_id)
+        
+        # Unpack message header
         self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
         self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
         self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
+
+        # TODO: Error checking based on message header
 
     @classmethod
     def unpack_message(self):
@@ -189,6 +220,7 @@ class GS:
 
                 elif (config.MODE == "DBG"):
                     if queue.is_empty():
+                        print("Queue is empty, requesting heartbeats")
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     else:
                         self.rq_cmd = queue.dequeue()
@@ -229,6 +261,13 @@ class GS:
 
                 elif self.rx_msg_id == MSG_ID.SAT_ACK:
                     self.received_Ack()
+                
+                elif self.rx_msg_id == MSG_ID.SAT_TM_STORAGE:
+                    self.received_TM_Storage()
+                
+                elif self.rx_msg_id == MSG_ID.SAT_TM_HAL:
+                    self.received_TM_HAL()
+
                 else:
                     # Invalid RX message ID
                     print(f"**** Received invalid msgID {self.rx_msg_id} ****")
@@ -266,7 +305,13 @@ class GS:
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
                 self.transmit_Filepkt()
-
+            
+            elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
+                self.rq_sq = 0
+                self.rq_len = 0
+                self.payload = bytearray()
+                print(f"Transmitting CMD: Request Telemetry - {self.rq_cmd}")
+                
             else:
                 # Set RQ message parameters for HB request
                 self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
@@ -280,6 +325,7 @@ class GS:
                 + self.rq_len.to_bytes(1, "big")
             )
 
+            # tx_message = bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID]) + tx_header + self.payload      #src/dst header
             tx_message = tx_header + self.payload
 
             # header_from and header_to set to 255
@@ -390,6 +436,18 @@ class GS:
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
+    @classmethod
+    def received_TM_Storage(self):
+        print(f"**** Received an ACK {self.rx_message} ****")
+
+        if (config.MODE == "DB"):
+            db_services.add_Telemetry()
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"ACK:{self.rx_message}")
+
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
+
     # ----------------------- Transmitted Information ----------------------- #
     @classmethod
     def transmit_SwitchToState(self):
@@ -439,7 +497,37 @@ class GS:
         )
         print("Transmitting CMD: GS_CMD_FILE_PKT")
 
+    @classmethod
+    def transmit_uplink_time_reference(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 4
 
+        # Temporary hardcoding for GS_CMD_UPLINK_TIME_REFERENCE
+        self.payload = (1739727422).to_bytes(4, "big") #time reference param
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_TIME_REFERENCE")
+    
+    @classmethod
+    def transmit_uplink_orbit_refere(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 28
+
+        # Temporary hardcoding for GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.payload = (
+            (1739727422).to_bytes(4, "big") + #time reference
+            (0).to_bytes(4, "big") + #position
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big") +
+            (0).to_bytes(4, "big") + #velocity
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big")
+        )
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_ORBIT_REFERENCE")
 
 # -------------------- TODO: replace with Database functions ---------------- #
 # Mockup of Command Interface
