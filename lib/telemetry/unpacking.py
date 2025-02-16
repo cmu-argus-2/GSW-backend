@@ -243,6 +243,39 @@ class TelemetryUnpacker:
         self._data_STORAGE[STORAGE_IDX.CDH_NUM_FILES] = msg[22:26]
         self._data_STORAGE[STORAGE_IDX.CDH_DIR_SIZE] = msg[26:30]
 
+        ############ EPS Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.EPS_DIR_SIZE] = msg[30:34]
+        self._data_STORAGE[STORAGE_IDX.EPS_DIR_SIZE] = msg[34:38]
+
+        ############ ADCS Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.ADCS_DIR_SIZE] = msg[38:42]
+        self._data_STORAGE[STORAGE_IDX.ADCS_DIR_SIZE] = msg[42:46]
+
+        ############ COMMS Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.COMMS_DIR_SIZE] = msg[46:50]
+        self._data_STORAGE[STORAGE_IDX.COMMS_DIR_SIZE] = msg[50:54]
+
+        ############ GPS Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.GPS_DIR_SIZE] = msg[54:58]
+        self._data_STORAGE[STORAGE_IDX.GPS_DIR_SIZE] = msg[58:62]
+
+        ############ PAYLOAD Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.PAYLOAD_DIR_SIZE] = msg[62:66]
+        self._data_STORAGE[STORAGE_IDX.PAYLOAD_DIR_SIZE] = msg[66:70]
+
+        ############ THERMAL Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.THERMAL_DIR_SIZE] = msg[70:74]
+        self._data_STORAGE[STORAGE_IDX.THERMAL_DIR_SIZE] = msg[74:78]
+
+        ############ COMMAND Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.COMMAND_DIR_SIZE] = msg[78:82]
+        self._data_STORAGE[STORAGE_IDX.COMMAND_DIR_SIZE] = msg[82:86]
+
+        ############ IMG Storage Field ############
+        self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[86:90]
+        self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[90:94]
+
+
 
         
 
