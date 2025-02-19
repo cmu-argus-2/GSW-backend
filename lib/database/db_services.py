@@ -1,8 +1,7 @@
 from lib.database.db_server import query
-# from groundstation import MSG_ID
+from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import TelemetryUnpacker
 import json
-
 
 def get_latest_command():
     """Retrieve the latest command on the command queue (TX table)"""
@@ -55,17 +54,31 @@ def handle_command_ACK(ack):
         pass
 
 
-def add_Telemetry():
+def add_Telemetry(msg_id, tm_data):
     """A query to insert a new Heartbeat packet into the database (RX table)"""
-    msg_data = json.dumps(TelemetryUnpacker.get_heartbeat())
+    # Ensure that this is a telemetry frame
+    if msg_id not in MSG_ID.TM_FRAME_TYPES:
+        # TODO: error handling 
+        return
+    
+    msg_name = ""
+    if msg_id == MSG_ID.SAT_TM_NOMINAL:
+        msg_name = "SAT_TM_NOMINAL"
+    elif msg_id == MSG_ID.SAT_TM_HAL:
+        msg_name = "SAT_TM_HAL"
+    elif msg_id == MSG_ID.SAT_TM_STORAGE:
+        msg_name = "SAT_TM_STORAGE"
+    elif msg_id == MSG_ID.SAT_TM_PAYLOAD:
+        msg_name = "SAT_PAYLOAD"
+    
+    msg_data = json.dumps(tm_data, indent=4)
 
-    # TODO: do for other types of telemetry
     result = query(
         """
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
         VALUES (%s, %s, %s, %s::jsonb);
         """,
-        ('SAT_HEARTBEAT', 0x01, 'telemetry', msg_data) 
+        (msg_name, msg_id, 'telemetry', msg_data) 
     )
 
     

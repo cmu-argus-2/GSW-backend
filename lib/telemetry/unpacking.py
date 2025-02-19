@@ -189,6 +189,20 @@ class TelemetryUnpacker:
         print("THERMAL Data:", self._data_THERMAL)
         print()
 
+        heartbeat = {
+            "msg_id": self._msg_id,
+            "seq_cnt": self._seq_cnt, 
+            "size": self._size,
+            "CDH": self._data_CDH, 
+            "EPS": self._data_EPS, 
+            "ADCS": self._data_ADCS, 
+            "GPS": self._data_GPS, 
+            "THERMAL": self._data_THERMAL
+        }
+
+
+        return heartbeat 
+
     @classmethod
     def get_heartbeat(self):
         heartbeat = {
@@ -211,6 +225,8 @@ class TelemetryUnpacker:
         in vectors for each onboard subsystem.
         """
 
+        # TODO: may need to modify if we don't want 4 bytes of storage information (will 2 bytes be enough?)
+
         msg = list(msg)
 
         ############ TM Metadata ############
@@ -219,7 +235,7 @@ class TelemetryUnpacker:
         self._size = msg[3]
 
         # Sanity checks for message type and length
-        if self._msg_id != 0x04:
+        if self._msg_id != 0x03:
             raise RuntimeError("Message is not TM storage frame")
         if self._seq_cnt != 0:
             raise RuntimeError("Message seq. count incorrect")
@@ -275,9 +291,51 @@ class TelemetryUnpacker:
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[86:90]
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[90:94]
 
+        tm_storage = {
+            "msg_id": self._msg_id,
+            "seq_cnt": self._seq_cnt, 
+            "size": self._size,
+            "CDH": self._data_CDH,
+            "total_usage": self._data_STORAGE[STORAGE_IDX.TOTAL],
+            "CDH_storage": {
+                "CDH_num_files": self._data_STORAGE[STORAGE_IDX.CDH_NUM_FILES],
+                "CDH_dir_size": self._data_STORAGE[STORAGE_IDX.CDH_DIR_SIZE],
+            },
+            "EPS_storage": {
+                "EPS_num_files": self._data_STORAGE[STORAGE_IDX.EPS_NUM_FILES],
+                "EPS_dir_size": self._data_STORAGE[STORAGE_IDX.EPS_DIR_SIZE],
+            },
+            "ADCS_storage": {
+                "ADCS_num_files":self._data_STORAGE[STORAGE_IDX.ADCS_NUM_FILES],
+                "ADCS_dir_size":self._data_STORAGE[STORAGE_IDX.ADCS_DIR_SIZE],
+            },
+            "COMMS_storage": {
+                "COMMS_num_files":self._data_STORAGE[STORAGE_IDX.COMMS_NUM_FILES],
+                "COMMS_dir_size":self._data_STORAGE[STORAGE_IDX.COMMS_DIR_SIZE],
+            },
+            "GPS_storage":{
+                "GPS_num_files":self._data_STORAGE[STORAGE_IDX.GPS_NUM_FILES],
+                "GPS_dir_size":self._data_STORAGE[STORAGE_IDX.GPS_DIR_SIZE],
+            },
+            "PAYLOAD_storage": {
+                "PAYLOAD_num_files":self._data_STORAGE[STORAGE_IDX.PAYLOAD_NUM_FILES],
+                "PAYLOAD_dir_size":self._data_STORAGE[STORAGE_IDX.PAYLOAD_DIR_SIZE],
+            },
+            "THERMAL_storage": {
+                "THERMAL_num_files":self._data_STORAGE[STORAGE_IDX.THERMAL_NUM_FILES],
+                "THERMAL_dir_size":self._data_STORAGE[STORAGE_IDX.THERMAL_DIR_SIZE],
+            },
+            "COMMAND_storage": {
+                "COMMAND_num_files":self._data_STORAGE[STORAGE_IDX.COMMAND_NUM_FILES],
+                "COMMAND_dir_size":self._data_STORAGE[STORAGE_IDX.COMMAND_DIR_SIZE],
+            },
+            "IMG_storage": {
+                "IMG_num_files":self._data_STORAGE[STORAGE_IDX.IMG_NUM_FILES],
+                "IMG_dir_size":self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE],
+            }
+        }
 
-
-        
+        return tm_storage
 
     @classmethod
     def unpack_tm_frame_HAL(self,msg):
@@ -312,4 +370,11 @@ class TelemetryUnpacker:
         print()
         print("Metadata (ID, SQ_CNT, LEN):", self._msg_id, self._seq_cnt, self._size)
         print("CDH Data:", self._data_CDH)
+
+        tm_HAL = {
+            "msg_id": self._msg_id,
+            "seq_cnt": self._seq_cnt, 
+            "size": self._size,
+            "CDH": self._data_CDH, 
+        }
 

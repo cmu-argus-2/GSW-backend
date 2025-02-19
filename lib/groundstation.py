@@ -8,6 +8,7 @@ from lib.database import db_services
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
+from lib.gs_constants import MSG_ID
 
 """
 GS state functions:
@@ -24,60 +25,6 @@ class GS_COMMS_STATE:
     RX = 0x00
     TX = 0x01
     DB_RW = 0x02
-
-
-# Message ID database for communication protocol
-class MSG_ID:
-    """
-    Comms message IDs that are downlinked during the mission
-    """
-
-    # Source header ID for Argus - THIS MUST BE UNIQUE FOR EACH SPACECRAFT
-    ARGUS_1_ID = 0x01
-    ARGUS_2_ID = 0x02
-
-    # Source header ID for GS
-    GS_ID = 0x04
-
-    # SAT heartbeat, nominally downlinked in orbit
-    SAT_HEARTBEAT = 0x01
-
-    # SAT TM frames, requested by GS
-    SAT_TM_NOMINAL = 0x02
-    SAT_TM_HAL     = 0x03
-    SAT_TM_STORAGE = 0x04
-    SAT_TM_PAYLOAD = 0x05
-
-    # SAT ACK, in response to GS commands
-    SAT_ACK = 0x0F
-
-    # SAT file metadata and file content messages
-    SAT_FILE_METADATA = 0x10
-    SAT_FILE_PKT = 0x20
-
-    """
-    GS commands to be uplinked to Argus
-    """
-
-    # GS commands SC responds to with an ACK
-    GS_CMD_FORCE_REBOOT = 0x40
-    GS_CMD_SWITCH_TO_STATE = 0x41
-    GS_CMD_UPLINK_TIME_REFERENCE = 0x42
-    GS_CMD_UPLINK_ORBIT_REFERENCE = 0x43
-    GS_CMD_TURN_OFF_PAYLOAD = 0x44
-    GS_CMD_SCHEDULE_OD_EXPERIMENT = 0x45
-    GS_CMD_DOWNLINK_ALL_FILES = 0x4D
-
-    # GS commands SC responds to with a frame
-    GS_CMD_REQUEST_TM_HEARTBEAT = 0x46
-    GS_CMD_REQUEST_TM_HAL = 0x47
-    GS_CMD_REQUEST_TM_STORAGE = 0x48
-    GS_CMD_REQUEST_TM_PAYLOAD = 0x49
-
-    # GS commands SC responds to with file MD or packets
-    GS_CMD_FILE_METADATA = 0x4A
-    GS_CMD_FILE_PKT = 0x4B
-
 
 class GS:
     # Radio abstraction for GS
@@ -117,7 +64,7 @@ class GS:
     payload = bytearray()
 
     # File metadata parameters
-    file_id = 0x01
+    file_id = 0x0A # IMG
     file_time = 1738351687
     file_size = 0x00
     file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
@@ -134,12 +81,12 @@ class GS:
     @classmethod
     def unpack_header(self):
         # Unpack source header
-        # self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        # self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
-        # self.rx_message = self.rx_message[2:]
+        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
+        self.rx_message = self.rx_message[2:]
 
-        # # TODO: Error checking based on source header
-        # print("Source Header:", self.rx_src_id, self.rx_dst_id)
+        # TODO: Error checking based on source header
+        print("Source Header:", self.rx_src_id, self.rx_dst_id)
         
         # Unpack message header
         self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
@@ -250,7 +197,7 @@ class GS:
                 print("Currently in RX state")
                 print("///////////////////////")
 
-                if self.rx_msg_id == MSG_ID.SAT_HEARTBEAT:
+                if self.rx_msg_id == MSG_ID.SAT_TM_NOMINAL:
                     self.received_Heartbeat()
 
                 elif self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
@@ -306,6 +253,12 @@ class GS:
             elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
                 self.transmit_Filepkt()
             
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
+                self.transmit_uplink_orbit_reference()
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
+                self.transmit_uplink_time_reference()
+            
             elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
                 self.rq_sq = 0
                 self.rq_len = 0
@@ -325,8 +278,8 @@ class GS:
                 + self.rq_len.to_bytes(1, "big")
             )
 
-            # tx_message = bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID]) + tx_header + self.payload      #src/dst header
-            tx_message = tx_header + self.payload
+            tx_message = bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID]) + tx_header + self.payload      #src/dst header
+            # tx_message = tx_header + self.payload
 
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
@@ -343,11 +296,11 @@ class GS:
     @classmethod
     def received_Heartbeat(self):
         # Message is a heartbeat with TM frame, unpack
-        TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
+        tm_data = TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
         print("**** Received HB ****")
 
         if (config.MODE == "DB"):
-                db_services.add_Telemetry()
+            db_services.add_Telemetry(MSG_ID.SAT_TM_NOMINAL, tm_data)
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"TEL:{self.rx_message}")
 
@@ -359,6 +312,7 @@ class GS:
     def received_Metadata(self):
         # Message is file metadata
         print("**** Received file metadata ****")
+        print(f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
 
         # Unpack file parameters
         self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder="big")
@@ -379,6 +333,7 @@ class GS:
         # TODO: Check for file ID and file time
         # Message is file packet
         print(f"Received PKT {self.rx_msg_sq} out of {self.file_target_sq}")
+        print(f"File data {self.rx_message}")
         # print(self.rx_message[9:self.rx_msg_size + 9])
 
         # Check internal gs_msg_sq against rx_msg_sq
@@ -438,12 +393,24 @@ class GS:
 
     @classmethod
     def received_TM_Storage(self):
-        print(f"**** Received an ACK {self.rx_message} ****")
-
+        print(f"**** Received an TM_Storage {self.rx_message} ****")
+        tm_data = TelemetryUnpacker.unpack_tm_frame_storage(self.rx_message)
         if (config.MODE == "DB"):
-            db_services.add_Telemetry()
+            db_services.add_Telemetry(MSG_ID.SAT_TM_STORAGE, tm_data)
         elif (config.MODE == "DBG"):
-            db_queue.enqueue(f"ACK:{self.rx_message}")
+            db_queue.enqueue(f"TM_Storage:{self.rx_message}")
+
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
+
+    @classmethod
+    def received_TM_HAL(self):
+        print(f"**** Received an TM_Storage {self.rx_message} ****")
+        tm_data = TelemetryUnpacker.unpack_tm_frame_HAL(self.rx_message)
+        if (config.MODE == "DB"):
+            db_services.add_Telemetry(MSG_ID.SAT_TM_HAL, tm_data)
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"TM_HAL:{self.rx_message}")
 
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
@@ -510,7 +477,7 @@ class GS:
         print("Transmitting CMD: GS_CMD_UPLINK_TIME_REFERENCE")
     
     @classmethod
-    def transmit_uplink_orbit_refere(self):
+    def transmit_uplink_orbit_reference(self):
         # Set RQ message parameters for PKT
         self.rq_cmd = MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE
         self.rq_sq = 0
@@ -551,8 +518,8 @@ class fifoQ:
 
 # Command Interface Instantiation 
 queue = fifoQ()
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_STORAGE)
+queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
 queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
 # queue.enqueue(0x4B)
 
