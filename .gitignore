@@ -2,3 +2,4 @@ lib/passwords.py
 env/
 *.pyc
 .env
+.env.save
