@@ -518,9 +518,9 @@ class fifoQ:
 
 # Command Interface Instantiation 
 queue = fifoQ()
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_STORAGE)
-queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
+queue.enqueue(MSG_ID.GS_CMD_SWITCH_TO_STATE)
+queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
 # queue.enqueue(0x4B)
 
 # Database Queue Instantiation
