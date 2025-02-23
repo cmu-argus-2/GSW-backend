@@ -12,7 +12,7 @@ class MSG_ID:
     GS_ID = 0x04
 
     # SAT heartbeat, nominally downlinked in orbit
-    # SAT_HEARTBEAT = 0x01
+    SAT_HEARTBEAT = 0x05
 
     # SAT TM frames, requested by GS
     SAT_TM_NOMINAL = 0x01

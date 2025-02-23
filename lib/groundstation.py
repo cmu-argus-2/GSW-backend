@@ -4,7 +4,8 @@ import lib.config as config
 from collections import deque
 
 import RPi.GPIO as GPIO
-from lib.database import db_services
+from lib.database import db_rx_data
+from lib.database import db_command_queue
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
@@ -131,12 +132,12 @@ class GS:
 
                     # TODO: Check if queue has a valid message ID
                     if (config.MODE == "DB"):
-                        if (db_services.commands_available()): # if db is empty 
+                        if (db_command_queue.commands_available()): # if db is empty 
                             self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                         else:
-                            self.rq_cmd = db_services.get_latest_command() # get top of the queue
+                            self.rq_cmd = db_command_queue.get_latest_command() # get top of the queue
                             print ("Latest Command2:", self.rq_cmd)
-                            # db_services.remove_latest_command()
+                            # db_command_queue.remove_latest_command()
 
 
                     # TODO: Check if queue has a valid message ID
@@ -152,17 +153,17 @@ class GS:
                     self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
 
             else:
-                # db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
+                # db_rx_data.add_downlink_data(self.rx_msg_id, self.rx_message)
                 if (config.MODE == "DB"):
                     # TODO: Check if queue has a valid message ID
                     # TODO: remove default - handled in CI
-                    if (db_services.commands_available() == None): #if db is empty 
-                        print("CI is empty")
+                    if (db_command_queue.commands_available() == None): #if db is empty 
+                        print("CQ is empty")
                         self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     else:
-                        self.rq_cmd = db_services.get_latest_command()
+                        self.rq_cmd = db_command_queue.get_latest_command()
                         print ("Latest Command1:", self.rq_cmd)
-                        db_services.remove_latest_command()
+                        db_command_queue.remove_latest_command()
 
 
                 elif (config.MODE == "DBG"):
@@ -297,10 +298,11 @@ class GS:
     def received_Heartbeat(self):
         # Message is a heartbeat with TM frame, unpack
         tm_data = TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
+        TelemetryUnpacker.unpack_frame(self.rx_msg_id, self.rx_message)
         print("**** Received HB ****")
 
         if (config.MODE == "DB"):
-            db_services.add_Telemetry(MSG_ID.SAT_TM_NOMINAL, tm_data)
+            db_rx_data.add_Telemetry(MSG_ID.SAT_TM_NOMINAL, tm_data)
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"TEL:{self.rx_message}")
 
@@ -321,7 +323,7 @@ class GS:
         self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder="big")
 
         if (config.MODE == "DB"):
-                db_services.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq])
+                db_rx_data.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq])
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
 
@@ -371,7 +373,7 @@ class GS:
             print("**** Received all packets. RX --> DB_RW ****")
 
             if (config.MODE == "DB"):
-                 db_services.add_File_Packet(self.file_array, self.file_id, self.filename)
+                 db_rx_data.add_File_Packet(self.file_array, self.file_id, self.filename)
             elif (config.MODE == "DBG"):
                 db_queue.enqueue(f"PKT:{self.file_array},{self.file_id}, {self.filename}")
         
@@ -384,7 +386,7 @@ class GS:
         print(f"**** Received an ACK {self.rx_message} ****")
 
         if (config.MODE == "DB"):
-            db_services.add_Ack()
+            db_rx_data.add_Ack()
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"ACK:{self.rx_message}")
 
@@ -396,7 +398,7 @@ class GS:
         print(f"**** Received an TM_Storage {self.rx_message} ****")
         tm_data = TelemetryUnpacker.unpack_tm_frame_storage(self.rx_message)
         if (config.MODE == "DB"):
-            db_services.add_Telemetry(MSG_ID.SAT_TM_STORAGE, tm_data)
+            db_rx_data.add_Telemetry(MSG_ID.SAT_TM_STORAGE, tm_data)
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"TM_Storage:{self.rx_message}")
 
@@ -408,7 +410,7 @@ class GS:
         print(f"**** Received an TM_Storage {self.rx_message} ****")
         tm_data = TelemetryUnpacker.unpack_tm_frame_HAL(self.rx_message)
         if (config.MODE == "DB"):
-            db_services.add_Telemetry(MSG_ID.SAT_TM_HAL, tm_data)
+            db_rx_data.add_Telemetry(MSG_ID.SAT_TM_HAL, tm_data)
         elif (config.MODE == "DBG"):
             db_queue.enqueue(f"TM_HAL:{self.rx_message}")
 

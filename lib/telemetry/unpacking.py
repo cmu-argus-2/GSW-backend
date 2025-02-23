@@ -1,6 +1,7 @@
 """
 GS Telemetry Unpacker
 """
+import struct
 
 from lib.telemetry.constants import *
 from lib.telemetry.helpers import *
@@ -198,20 +199,6 @@ class TelemetryUnpacker:
         return heartbeat 
 
     @classmethod
-    def get_heartbeat(self):
-        heartbeat = {
-            "msg_id": self._msg_id,
-            "seq_cnt": self._seq_cnt, 
-            "size": self._size,
-            "CDH": self._data_CDH, 
-            "EPS": self._data_EPS, 
-            "ADCS": self._data_ADCS, 
-            "GPS": self._data_GPS, 
-        }
-
-        return heartbeat
-
-    @classmethod
     def unpack_tm_frame_storage(self, msg):
         """
         Unpack TM frame storage received from satellite and put data
@@ -283,6 +270,7 @@ class TelemetryUnpacker:
         ############ IMG Storage Field ############
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[86:90]
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[90:94]
+
 
         tm_storage = {
             "msg_id": self._msg_id,
@@ -370,4 +358,44 @@ class TelemetryUnpacker:
             "size": self._size,
             "CDH": self._data_CDH, 
         }
+
+        return tm_HAL
+
+
+    @classmethod
+    def unpack_frame(self, msg_id, msg):
+        """
+        Parses messages received from SC and dynamically unpacks it into a JSON format
+        to store into database.
+
+        Arguments:
+            msg_id: the id of the message
+            msg: the list of bits received
+
+        Returns:
+        Parsed data in the form of a dictionary (JSON)            
+        """
+
+        # get the format and data types for that message
+        data_format = DATA_FORMATS[msg_id]
+
+        parsed_data = {}
+        offset = 0 # This is where we start reading from the first byte
+
+        for subsystem, fields in data_format.items():
+            parsed_data[subsystem] = {}
+
+            # Create struct format string dynamically by computing size and getting the format strings
+            format_string = "".join([field[1] for field in fields])
+            size = struct.calcsize(format_string)
+            unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
+
+            # Map unpacked values to field names for each subsystem
+            for i, (field_name, _) in enumerate(fields):
+                parsed_data[subsystem][field_name] = unpacked_values[i]
+
+            offset += size  # Move offset forward
+
+        print(parsed_data)
+        return parsed_data
 

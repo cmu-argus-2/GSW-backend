@@ -3,52 +3,14 @@ from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import TelemetryUnpacker
 import json
 
-def get_latest_command():
-    """Retrieve the latest command on the command queue (TX table)"""
-    result = query(
-        """ 
-        SELECT * FROM public.txcommands_tb
-        ORDER BY created_at ASC
-        LIMIT 1;
-    """
-    )
-    print ("Reult:", result)
-    if result[1] != []: 
-        return result[1][0][1]
-    else:
-        return 70
-
-
-def remove_latest_command():
-    """Retrieve the latest command on the command queue (TX table)"""
-    result = query(
-        """
-        DELETE FROM txCommands_tb
-        WHERE id = (
-            SELECT id FROM txCommands_tb
-            ORDER BY created_at ASC
-            LIMIT 1 
-        )
-        RETURNING *;
-    """
-    )
-    return result[0] if result else None
-
-def commands_available():
-    """Determine if there are commands available and queued up"""
-    result = query(
-        """
-        SELECT EXISTS (SELECT 1 FROM txCommands_tb LIMIT 1);
-        """
-    )
-    return result
-
 def handle_command_ACK(ack):
     """If SC sends an ack for a command, we need to handle successful and failed executions of commands.
     If successful, remove from the command queue (TX table).
     """
     if ack == 0x0F:
-        remove_latest_command()
+        # TODO: handle the logic for this for GS rework
+        # remove_latest_command()
+        pass
     else:
         # TODO: Think about what to do if failed, resend command?
         pass
@@ -95,7 +57,7 @@ def add_Ack(msg_data=None):
             }'::jsonb
         );
         """,
-        ('SAT_ACK', 0x0F, 'ack') 
+        ('SAT_ACK', MSG_ID.SAT_ACK, 'ack') 
     )
     
 def add_File_Meta_Data(msg_data):
@@ -116,7 +78,7 @@ def add_File_Meta_Data(msg_data):
             %s::jsonb
         );
         """,
-        ('SAT_FILE_METADATA', 0x10, 'file', file_MD)
+        ('SAT_FILE_METADATA', MSG_ID.SAT_FILE_METADATA, 'file', file_MD)
     )
 
 def add_File_Packet(msg_data, file_id, file_name):
