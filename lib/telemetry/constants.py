@@ -1,4 +1,5 @@
 from gs_constants import MSG_ID
+
 # Index constants for accessing data in the Data Handler
 
 
@@ -17,10 +18,11 @@ class CDH_IDX:
     HAL_BITFLAGS = const(6)
     DETUMBLING_ERROR_FLAG = const(7)
 
+
 TM_METADATA_FORMAT = {
     "METADATA": [
         ("MSG_ID", "I"),
-        ("SEQ_CNT", "H"), # Unsigned Short (2 Bytes)
+        ("SEQ_CNT", "H"),  # Unsigned Short (2 Bytes)
         ("SIZE", "I"),
     ]
 }
@@ -128,7 +130,7 @@ HEARTBEAT_NOMINAL_FORMAT = {
         ("ECEF_VX", "i"),
         ("ECEF_VY", "i"),
         ("ECEF_VZ", "i"),
-    ]
+    ],
 }
 
 TM_STORAGE_FORMAT = {
@@ -144,43 +146,34 @@ TM_STORAGE_FORMAT = {
     ],
     "STORAGE": [
         ("TOTAL", "I"),  # Unsigned Long (4 bytes)
-        
         # CDH Storage
         ("CDH_NUM_FILES", "I"),
         ("CDH_DIR_SIZE", "I"),
-
         # EPS Storage
         ("EPS_NUM_FILES", "I"),
         ("EPS_DIR_SIZE", "I"),
-
         # ADCS Storage
         ("ADCS_NUM_FILES", "I"),
         ("ADCS_DIR_SIZE", "I"),
-
         # COMMS Storage
         ("COMMS_NUM_FILES", "I"),
         ("COMMS_DIR_SIZE", "I"),
-
         # GPS Storage
         ("GPS_NUM_FILES", "I"),
         ("GPS_DIR_SIZE", "I"),
-
         # PAYLOAD Storage
         ("PAYLOAD_NUM_FILES", "I"),
         ("PAYLOAD_DIR_SIZE", "I"),
-
         # THERMAL Storage
         ("THERMAL_NUM_FILES", "I"),
         ("THERMAL_DIR_SIZE", "I"),
-
         # COMMAND Storage
         ("COMMAND_NUM_FILES", "I"),
         ("COMMAND_DIR_SIZE", "I"),
-
         # IMG Storage
         ("IMG_NUM_FILES", "I"),
         ("IMG_DIR_SIZE", "I"),
-    ]
+    ],
 }
 
 # TODO: finish once error codes are established
@@ -200,11 +193,12 @@ TM_HAL_FORMAT = {
 # TODO: Need to do it for payload once that is defined
 
 DATA_FORMATS = {
-    MSG_ID.SAT_TM_NOMINAL : HEARTBEAT_NOMINAL_FORMAT, 
-    MSG_ID.SAT_HEARTBEAT : HEARTBEAT_NOMINAL_FORMAT, 
-    MSG_ID.SAT_TM_STORAGE : TM_STORAGE_FORMAT, 
-    MSG_ID.SAT_TM_HAL : TM_HAL_FORMAT
+    MSG_ID.SAT_TM_NOMINAL: HEARTBEAT_NOMINAL_FORMAT,
+    MSG_ID.SAT_HEARTBEAT: HEARTBEAT_NOMINAL_FORMAT,
+    MSG_ID.SAT_TM_STORAGE: TM_STORAGE_FORMAT,
+    MSG_ID.SAT_TM_HAL: TM_HAL_FORMAT,
 }
+
 
 class EPS_IDX:
     TIME_EPS = const(0)
@@ -325,6 +319,7 @@ class GPS_IDX:
 
 class PAYLOAD_IDX:
     pass
+
 
 class STORAGE_IDX:
     TOTAL = const(0)

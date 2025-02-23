@@ -11,7 +11,7 @@ CDH_NUM = 8
 EPS_NUM = 43
 ADCS_NUM = 31
 GPS_NUM = 21
-STORAGE_NUM = 19 
+STORAGE_NUM = 19
 
 
 class TelemetryUnpacker:
@@ -63,17 +63,29 @@ class TelemetryUnpacker:
         self._data_GPS[GPS_IDX.TIME_GPS] = self._data_CDH[CDH_IDX.TIME]
 
         ############ EPS Fields ############
-        self._data_EPS[EPS_IDX.EPS_POWER_FLAG]    = msg[18]
-        self._data_EPS[EPS_IDX.MAINBOARD_TEMPERATURE] = unpack_signed_short_int(msg[19:21])
+        self._data_EPS[EPS_IDX.EPS_POWER_FLAG] = msg[18]
+        self._data_EPS[EPS_IDX.MAINBOARD_TEMPERATURE] = unpack_signed_short_int(
+            msg[19:21]
+        )
         self._data_EPS[EPS_IDX.MAINBOARD_VOLTAGE] = unpack_signed_short_int(msg[21:23])
         self._data_EPS[EPS_IDX.MAINBOARD_CURRENT] = unpack_signed_short_int(msg[23:25])
 
-        self._data_EPS[EPS_IDX.BATTERY_PACK_TEMPERATURE] = unpack_signed_short_int(msg[25:27])
+        self._data_EPS[EPS_IDX.BATTERY_PACK_TEMPERATURE] = unpack_signed_short_int(
+            msg[25:27]
+        )
         self._data_EPS[EPS_IDX.BATTERY_PACK_REPORTED_SOC] = msg[27]
-        self._data_EPS[EPS_IDX.BATTERY_PACK_REPORTED_CAPACITY] = unpack_signed_short_int(msg[28:30])
-        self._data_EPS[EPS_IDX.BATTERY_PACK_CURRENT] = unpack_signed_short_int(msg[30:32])
-        self._data_EPS[EPS_IDX.BATTERY_PACK_VOLTAGE] = unpack_signed_short_int(msg[32:34])
-        self._data_EPS[EPS_IDX.BATTERY_PACK_MIDPOINT_VOLTAGE] = unpack_signed_short_int(msg[34:36])
+        self._data_EPS[
+            EPS_IDX.BATTERY_PACK_REPORTED_CAPACITY
+        ] = unpack_signed_short_int(msg[28:30])
+        self._data_EPS[EPS_IDX.BATTERY_PACK_CURRENT] = unpack_signed_short_int(
+            msg[30:32]
+        )
+        self._data_EPS[EPS_IDX.BATTERY_PACK_VOLTAGE] = unpack_signed_short_int(
+            msg[32:34]
+        )
+        self._data_EPS[EPS_IDX.BATTERY_PACK_MIDPOINT_VOLTAGE] = unpack_signed_short_int(
+            msg[34:36]
+        )
         self._data_EPS[EPS_IDX.BATTERY_PACK_TTE] = unpack_unsigned_long_int(msg[36:40])
         self._data_EPS[EPS_IDX.BATTERY_PACK_TTF] = unpack_unsigned_long_int(msg[40:44])
 
@@ -92,29 +104,61 @@ class TelemetryUnpacker:
         self._data_EPS[EPS_IDX.ZM_COIL_VOLTAGE] = unpack_signed_short_int(msg[64:66])
         self._data_EPS[EPS_IDX.ZM_COIL_CURRENT] = unpack_signed_short_int(msg[66:68])
 
-        self._data_EPS[EPS_IDX.JETSON_INPUT_VOLTAGE] = unpack_signed_short_int(msg[68:70])
-        self._data_EPS[EPS_IDX.JETSON_INPUT_CURRENT] = unpack_signed_short_int(msg[70:72])
+        self._data_EPS[EPS_IDX.JETSON_INPUT_VOLTAGE] = unpack_signed_short_int(
+            msg[68:70]
+        )
+        self._data_EPS[EPS_IDX.JETSON_INPUT_CURRENT] = unpack_signed_short_int(
+            msg[70:72]
+        )
 
-        self._data_EPS[EPS_IDX.RF_LDO_OUTPUT_VOLTAGE] = unpack_signed_short_int(msg[72:74])
-        self._data_EPS[EPS_IDX.RF_LDO_OUTPUT_CURRENT] = unpack_signed_short_int(msg[74:76])
+        self._data_EPS[EPS_IDX.RF_LDO_OUTPUT_VOLTAGE] = unpack_signed_short_int(
+            msg[72:74]
+        )
+        self._data_EPS[EPS_IDX.RF_LDO_OUTPUT_CURRENT] = unpack_signed_short_int(
+            msg[74:76]
+        )
 
         self._data_EPS[EPS_IDX.GPS_VOLTAGE] = unpack_signed_short_int(msg[76:78])
         self._data_EPS[EPS_IDX.GPS_CURRENT] = unpack_signed_short_int(msg[78:80])
 
-        self._data_EPS[EPS_IDX.XP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[80:82])
-        self._data_EPS[EPS_IDX.XP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[82:84])
-        self._data_EPS[EPS_IDX.XM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[84:86])
-        self._data_EPS[EPS_IDX.XM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[86:88])
+        self._data_EPS[EPS_IDX.XP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[80:82]
+        )
+        self._data_EPS[EPS_IDX.XP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[82:84]
+        )
+        self._data_EPS[EPS_IDX.XM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[84:86]
+        )
+        self._data_EPS[EPS_IDX.XM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[86:88]
+        )
 
-        self._data_EPS[EPS_IDX.YP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[88:90])
-        self._data_EPS[EPS_IDX.YP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[90:92])
-        self._data_EPS[EPS_IDX.YM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[92:94])
-        self._data_EPS[EPS_IDX.YM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[94:96])
+        self._data_EPS[EPS_IDX.YP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[88:90]
+        )
+        self._data_EPS[EPS_IDX.YP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[90:92]
+        )
+        self._data_EPS[EPS_IDX.YM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[92:94]
+        )
+        self._data_EPS[EPS_IDX.YM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[94:96]
+        )
 
-        self._data_EPS[EPS_IDX.ZP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[96:98])
-        self._data_EPS[EPS_IDX.ZP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[98:100])
-        self._data_EPS[EPS_IDX.ZM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(msg[100:102])
-        self._data_EPS[EPS_IDX.ZM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(msg[102:104])
+        self._data_EPS[EPS_IDX.ZP_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[96:98]
+        )
+        self._data_EPS[EPS_IDX.ZP_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[98:100]
+        )
+        self._data_EPS[EPS_IDX.ZM_SOLAR_CHARGE_VOLTAGE] = unpack_signed_short_int(
+            msg[100:102]
+        )
+        self._data_EPS[EPS_IDX.ZM_SOLAR_CHARGE_CURRENT] = unpack_signed_short_int(
+            msg[102:104]
+        )
 
         ############ ADCS Fields ############
         self._data_ADCS[ADCS_IDX.MODE] = msg[104]
@@ -129,19 +173,43 @@ class TelemetryUnpacker:
 
         self._data_ADCS[ADCS_IDX.SUN_STATUS] = msg[129]
 
-        self._data_ADCS[ADCS_IDX.SUN_VEC_X] = convert_fixed_point_to_float_hp(msg[130:134])
-        self._data_ADCS[ADCS_IDX.SUN_VEC_Y] = convert_fixed_point_to_float_hp(msg[134:138])
-        self._data_ADCS[ADCS_IDX.SUN_VEC_Z] = convert_fixed_point_to_float_hp(msg[138:142])
+        self._data_ADCS[ADCS_IDX.SUN_VEC_X] = convert_fixed_point_to_float_hp(
+            msg[130:134]
+        )
+        self._data_ADCS[ADCS_IDX.SUN_VEC_Y] = convert_fixed_point_to_float_hp(
+            msg[134:138]
+        )
+        self._data_ADCS[ADCS_IDX.SUN_VEC_Z] = convert_fixed_point_to_float_hp(
+            msg[138:142]
+        )
 
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XP] = unpack_signed_short_int(msg[142:144])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XM] = unpack_signed_short_int(msg[144:146])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YP] = unpack_signed_short_int(msg[146:148])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YM] = unpack_signed_short_int(msg[148:150])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP1] = unpack_signed_short_int(msg[150:152])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP2] = unpack_signed_short_int(msg[152:154])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP3] = unpack_signed_short_int(msg[154:156])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP4] = unpack_signed_short_int(msg[156:158])
-        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZM] = unpack_signed_short_int(msg[158:160])
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XP] = unpack_signed_short_int(
+            msg[142:144]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_XM] = unpack_signed_short_int(
+            msg[144:146]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YP] = unpack_signed_short_int(
+            msg[146:148]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_YM] = unpack_signed_short_int(
+            msg[148:150]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP1] = unpack_signed_short_int(
+            msg[150:152]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP2] = unpack_signed_short_int(
+            msg[152:154]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP3] = unpack_signed_short_int(
+            msg[154:156]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZP4] = unpack_signed_short_int(
+            msg[156:158]
+        )
+        self._data_ADCS[ADCS_IDX.LIGHT_SENSOR_ZM] = unpack_signed_short_int(
+            msg[158:160]
+        )
 
         self._data_ADCS[ADCS_IDX.XP_COIL_STATUS] = msg[160]
         self._data_ADCS[ADCS_IDX.XM_COIL_STATUS] = msg[161]
@@ -150,10 +218,18 @@ class TelemetryUnpacker:
         self._data_ADCS[ADCS_IDX.ZP_COIL_STATUS] = msg[164]
         self._data_ADCS[ADCS_IDX.ZM_COIL_STATUS] = msg[165]
 
-        self._data_ADCS[ADCS_IDX.ATTITUDE_QW] = convert_fixed_point_to_float_hp(msg[166:170])
-        self._data_ADCS[ADCS_IDX.ATTITUDE_QX] = convert_fixed_point_to_float_hp(msg[170:174])
-        self._data_ADCS[ADCS_IDX.ATTITUDE_QY] = convert_fixed_point_to_float_hp(msg[174:178])
-        self._data_ADCS[ADCS_IDX.ATTITUDE_QZ] = convert_fixed_point_to_float_hp(msg[178:182])
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QW] = convert_fixed_point_to_float_hp(
+            msg[166:170]
+        )
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QX] = convert_fixed_point_to_float_hp(
+            msg[170:174]
+        )
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QY] = convert_fixed_point_to_float_hp(
+            msg[174:178]
+        )
+        self._data_ADCS[ADCS_IDX.ATTITUDE_QZ] = convert_fixed_point_to_float_hp(
+            msg[178:182]
+        )
 
         ############ GPS Fields ############
         self._data_GPS[GPS_IDX.GPS_MESSAGE_ID] = msg[182]
@@ -166,7 +242,9 @@ class TelemetryUnpacker:
         self._data_GPS[GPS_IDX.GPS_LATITUDE] = unpack_signed_long_int(msg[191:195])
         self._data_GPS[GPS_IDX.GPS_LONGITUDE] = unpack_signed_long_int(msg[195:199])
         self._data_GPS[GPS_IDX.GPS_ELLIPSOID_ALT] = unpack_signed_long_int(msg[199:203])
-        self._data_GPS[GPS_IDX.GPS_MEAN_SEA_LVL_ALT] = unpack_signed_long_int(msg[203:207])
+        self._data_GPS[GPS_IDX.GPS_MEAN_SEA_LVL_ALT] = unpack_signed_long_int(
+            msg[203:207]
+        )
 
         self._data_GPS[GPS_IDX.GPS_ECEF_X] = unpack_signed_long_int(msg[207:211])
         self._data_GPS[GPS_IDX.GPS_ECEF_Y] = unpack_signed_long_int(msg[211:215])
@@ -174,7 +252,6 @@ class TelemetryUnpacker:
         self._data_GPS[GPS_IDX.GPS_ECEF_VX] = unpack_signed_long_int(msg[219:223])
         self._data_GPS[GPS_IDX.GPS_ECEF_VY] = unpack_signed_long_int(msg[223:227])
         self._data_GPS[GPS_IDX.GPS_ECEF_VZ] = unpack_signed_long_int(msg[227:231])
-
 
         # TODO: Remove temp debugging
         print()
@@ -187,16 +264,15 @@ class TelemetryUnpacker:
 
         heartbeat = {
             "msg_id": self._msg_id,
-            "seq_cnt": self._seq_cnt, 
+            "seq_cnt": self._seq_cnt,
             "size": self._size,
-            "CDH": self._data_CDH, 
-            "EPS": self._data_EPS, 
-            "ADCS": self._data_ADCS, 
-            "GPS": self._data_GPS, 
+            "CDH": self._data_CDH,
+            "EPS": self._data_EPS,
+            "ADCS": self._data_ADCS,
+            "GPS": self._data_GPS,
         }
 
-
-        return heartbeat 
+        return heartbeat
 
     @classmethod
     def unpack_tm_frame_storage(self, msg):
@@ -271,10 +347,9 @@ class TelemetryUnpacker:
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[86:90]
         self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE] = msg[90:94]
 
-
         tm_storage = {
             "msg_id": self._msg_id,
-            "seq_cnt": self._seq_cnt, 
+            "seq_cnt": self._seq_cnt,
             "size": self._size,
             "CDH": self._data_CDH,
             "total_usage": self._data_STORAGE[STORAGE_IDX.TOTAL],
@@ -287,39 +362,39 @@ class TelemetryUnpacker:
                 "EPS_dir_size": self._data_STORAGE[STORAGE_IDX.EPS_DIR_SIZE],
             },
             "ADCS_storage": {
-                "ADCS_num_files":self._data_STORAGE[STORAGE_IDX.ADCS_NUM_FILES],
-                "ADCS_dir_size":self._data_STORAGE[STORAGE_IDX.ADCS_DIR_SIZE],
+                "ADCS_num_files": self._data_STORAGE[STORAGE_IDX.ADCS_NUM_FILES],
+                "ADCS_dir_size": self._data_STORAGE[STORAGE_IDX.ADCS_DIR_SIZE],
             },
             "COMMS_storage": {
-                "COMMS_num_files":self._data_STORAGE[STORAGE_IDX.COMMS_NUM_FILES],
-                "COMMS_dir_size":self._data_STORAGE[STORAGE_IDX.COMMS_DIR_SIZE],
+                "COMMS_num_files": self._data_STORAGE[STORAGE_IDX.COMMS_NUM_FILES],
+                "COMMS_dir_size": self._data_STORAGE[STORAGE_IDX.COMMS_DIR_SIZE],
             },
-            "GPS_storage":{
-                "GPS_num_files":self._data_STORAGE[STORAGE_IDX.GPS_NUM_FILES],
-                "GPS_dir_size":self._data_STORAGE[STORAGE_IDX.GPS_DIR_SIZE],
+            "GPS_storage": {
+                "GPS_num_files": self._data_STORAGE[STORAGE_IDX.GPS_NUM_FILES],
+                "GPS_dir_size": self._data_STORAGE[STORAGE_IDX.GPS_DIR_SIZE],
             },
             "PAYLOAD_storage": {
-                "PAYLOAD_num_files":self._data_STORAGE[STORAGE_IDX.PAYLOAD_NUM_FILES],
-                "PAYLOAD_dir_size":self._data_STORAGE[STORAGE_IDX.PAYLOAD_DIR_SIZE],
+                "PAYLOAD_num_files": self._data_STORAGE[STORAGE_IDX.PAYLOAD_NUM_FILES],
+                "PAYLOAD_dir_size": self._data_STORAGE[STORAGE_IDX.PAYLOAD_DIR_SIZE],
             },
             "THERMAL_storage": {
-                "THERMAL_num_files":self._data_STORAGE[STORAGE_IDX.THERMAL_NUM_FILES],
-                "THERMAL_dir_size":self._data_STORAGE[STORAGE_IDX.THERMAL_DIR_SIZE],
+                "THERMAL_num_files": self._data_STORAGE[STORAGE_IDX.THERMAL_NUM_FILES],
+                "THERMAL_dir_size": self._data_STORAGE[STORAGE_IDX.THERMAL_DIR_SIZE],
             },
             "COMMAND_storage": {
-                "COMMAND_num_files":self._data_STORAGE[STORAGE_IDX.COMMAND_NUM_FILES],
-                "COMMAND_dir_size":self._data_STORAGE[STORAGE_IDX.COMMAND_DIR_SIZE],
+                "COMMAND_num_files": self._data_STORAGE[STORAGE_IDX.COMMAND_NUM_FILES],
+                "COMMAND_dir_size": self._data_STORAGE[STORAGE_IDX.COMMAND_DIR_SIZE],
             },
             "IMG_storage": {
-                "IMG_num_files":self._data_STORAGE[STORAGE_IDX.IMG_NUM_FILES],
-                "IMG_dir_size":self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE],
-            }
+                "IMG_num_files": self._data_STORAGE[STORAGE_IDX.IMG_NUM_FILES],
+                "IMG_dir_size": self._data_STORAGE[STORAGE_IDX.IMG_DIR_SIZE],
+            },
         }
 
         return tm_storage
 
     @classmethod
-    def unpack_tm_frame_HAL(self,msg):
+    def unpack_tm_frame_HAL(self, msg):
         """
         Unpack TM frame HAL received from satellite and put data
         in vectors for each onboard subsystem.
@@ -354,13 +429,12 @@ class TelemetryUnpacker:
 
         tm_HAL = {
             "msg_id": self._msg_id,
-            "seq_cnt": self._seq_cnt, 
+            "seq_cnt": self._seq_cnt,
             "size": self._size,
-            "CDH": self._data_CDH, 
+            "CDH": self._data_CDH,
         }
 
         return tm_HAL
-
 
     @classmethod
     def unpack_frame(self, msg_id, msg):
@@ -373,14 +447,14 @@ class TelemetryUnpacker:
             msg: the list of bits received
 
         Returns:
-        Parsed data in the form of a dictionary (JSON)            
+        Parsed data in the form of a dictionary (JSON)
         """
 
         # get the format and data types for that message
         data_format = DATA_FORMATS[msg_id]
 
         parsed_data = {}
-        offset = 0 # This is where we start reading from the first byte
+        offset = 0  # This is where we start reading from the first byte
 
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
@@ -398,4 +472,3 @@ class TelemetryUnpacker:
 
         print(parsed_data)
         return parsed_data
-
