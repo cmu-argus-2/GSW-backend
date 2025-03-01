@@ -42,10 +42,10 @@ def receive_loop():
     # Superloop for SAT comms, all logic handled in groundstation class
     while True:
         print("Waiting for packet...")
-        msg_rx = GS.receive()
+        msg_rx = GS.receive_pkt()
 
         if msg_rx == True:
-            GS.transmit()
+            GS.transmit_cmd()
             print("Requesting ID:", GS.rq_cmd, "SQ:", GS.rq_sq)
 
 
