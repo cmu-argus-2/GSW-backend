@@ -126,21 +126,28 @@ class CommandPacker:
         md_payload = ()
 
         if self.rq_cmd["id"] == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+            # payload = target_state_id (uint8) + time_in_state (uint32)
             md_payload = self.pack_SWITCH_TO_STATE(rq_cmd)
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
+            # payload = time_reference (uint32)
             md_payload = self.pack_UPLINK_TIME_REFERENCE(rq_cmd)
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
+            # payload = time_reference (uint32) + pos_x (int32) + pos_y (int32) + pos_z (int32)
+            # + vel_x (int32) + vel_y (int32) + vel_z (int32)
             md_payload = self.pack_UPLINK_ORBIT_REFERENCE(rq_cmd)
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_METADATA:
+            # payload = file_id (uint8) + file_time (uint32)
             md_payload = self.pack_REQUEST_FILE_METADATA(rq_cmd)
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_PKT:
+            # payload = file_id (uint8) + file_time (uint32) + rq_sq_cnt (uint16)
             md_payload = self.pack_REQUEST_FILE_PKT(rq_cmd)
 
         else:
+            # For all other commands that do not have arguments, just pack the command id
             md_payload = (
                 self.rq_cmd["id"].to_bytes(1, "big")
                 + (0).to_bytes(2, "big")

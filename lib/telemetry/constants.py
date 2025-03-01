@@ -190,6 +190,9 @@ TM_HAL_FORMAT = {
     ],
 }
 
+ACK_FORMAT = {"ACK_TYPE": [("ACK", "B")]}  # Could be different types of acks
+
+
 # TODO: Need to do it for payload once that is defined
 
 DATA_FORMATS = {
@@ -197,6 +200,7 @@ DATA_FORMATS = {
     MSG_ID.SAT_HEARTBEAT: HEARTBEAT_NOMINAL_FORMAT,
     MSG_ID.SAT_TM_STORAGE: TM_STORAGE_FORMAT,
     MSG_ID.SAT_TM_HAL: TM_HAL_FORMAT,
+    MSG_ID.SAT_ACK: ACK_FORMAT,
 }
 
 
