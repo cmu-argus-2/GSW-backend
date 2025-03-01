@@ -90,27 +90,41 @@ class GSStateMachine:
     def __init__(self):
         self.state = GS_COMMS_STATE.RECEIVE_PKT
 
+    @classmethod
     def transition_state(self):
-        if self.state == GS_COMMS_STATE.RECEIVE_PKT:
+        if GS.state == GS_COMMS_STATE.RECEIVE_PKT:
+            print ("1")
             # For file pkt transfer [toggle between receive and transmit]
-            if self.flag_rq_file:     
-                self.state = GS_COMMS_STATE.TRANSMIT_CMD 
-            elif cmd_received: 
-                self.state = GS_COMMS_STATE.UNPACK_AND_WRITE         
+            if GS.flag_rq_file:     
+                print ("1.1")
+                GS.state = GS_COMMS_STATE.TRANSMIT_CMD 
+            elif GS.cmd_received: 
+                print ("1.2")
+                GS.state = GS_COMMS_STATE.UNPACK_AND_WRITE         
             else: 
-                self.state = GS_COMMS_STATE.RECEIVE_PKT
+                print ("1.3")
+                GS.state = GS_COMMS_STATE.RECEIVE_PKT
 
-        elif self.state == GS_COMMS_STATE.UNPACK_AND_WRITE:
-            self.state = GS_COMMS_STATE.READ_AND_PACK
+        elif GS.state == GS_COMMS_STATE.UNPACK_AND_WRITE:
+            print ("2")
+            GS.state = GS_COMMS_STATE.READ_AND_PACK
         
-        elif self.state == GS_COMMS_STATE.READ_AND_PACK:
-            if read_and_pack_success:
-                self.state = GS_COMMS_STATE.TRANSMIT_CMD
+        elif GS.state == GS_COMMS_STATE.READ_AND_PACK:
+            print ("3")
+            if GS.read_and_pack_success:
+                print ("3.1")
+                GS.state = GS_COMMS_STATE.TRANSMIT_CMD
             else: 
-                self.state = GS_COMMS_STATE.ERROR_HANDLER #TODO: Logic 
+                print ("3.2")
+                GS.state = GS_COMMS_STATE.ERROR_HANDLER #TODO: Logic 
         
-        elif self.state == GS_COMMS_STATE.TRANSMIT_CMD:
-            self.state = GS_COMMS_STATE.RECEIVE_PKT
+        elif GS.state == GS_COMMS_STATE.TRANSMIT_CMD:
+            print ("4")
+            GS.state = GS_COMMS_STATE.RECEIVE_PKT
+        else:
+            print ("5")
+            GS.state = GS_COMMS_STATE.RECEIVE_PKT
+
 
 class DB_MOCK:
     if config.MODE == "DB":
@@ -170,10 +184,10 @@ class GS:
     # For packet timing tests
     rx_time = time.monotonic()
 
-    # def __init__(self):
-    #     self.gpio_controller = GPIOController() 
-    #     self.radiohead = RadioController()
-    #     self.unpacking = Unpacking()
+    # state transitions
+    read_and_pack_success = False
+    cmd_received = False
+
 
     @classmethod
     def receive_pkt(self):
@@ -195,12 +209,14 @@ class GS:
             self.cmd_received = True # For state transition 
             # self.gpio_controller.turn_rx_off()
             GPIO.output(self.rx_ctrl, GPIO.LOW)
+            GSStateMachine.transition_state()
             return True
         
         else:
             self.cmd_received = False
             print("**** Nothing Received. Stay in RX ****")
             print("\n")
+            GSStateMachine.transition_state()
             return False
         
 
@@ -457,9 +473,9 @@ class fifoQ:
 
 # Command Interface Instantiation 
 queue = fifoQ()
-queue.enqueue(MSG_ID.GS_CMD_SWITCH_TO_STATE)
-queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
-queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
+queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
+queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
 # queue.enqueue(0x4B)
 
 # Database Queue Instantiation
