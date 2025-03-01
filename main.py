@@ -1,13 +1,8 @@
 import sys
 
-from lib.shell_utils import (
-    receive_loop,
-    receive_loop_emulator,
-    receive_loop_serial,
-    send_command,
-    send_command_emulator,
-    send_command_serial,
-)
+from lib.shell_utils import (receive_loop, receive_loop_emulator,
+                             receive_loop_serial, send_command,
+                             send_command_emulator, send_command_serial)
 
 while True:
     connection_prompt = """

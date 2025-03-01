@@ -1,88 +1,30 @@
 import datetime
 import time
+import lib.config as config
 from collections import deque
 
 import RPi.GPIO as GPIO
+from lib.database import db_services
 
 from lib.radio_utils import initialize_radio
 from lib.telemetry.unpacking import TelemetryUnpacker
+from lib.gs_constants import MSG_ID
 
 """
 GS state functions:
 receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
 """
 
+if config.MODE == "DBG":
+    print("Debug Mode: Executing debug-specific code")
+elif config.MODE == "DB":
+    print("Database Mode: Executing database-specific code")
+
 # Ground station state
 class GS_COMMS_STATE:
     RX = 0x00
     TX = 0x01
     DB_RW = 0x02
-
-# Message ID database for communication protocol
-class MSG_ID:
-    """
-    Comms message IDs that are downlinked during the mission
-    """
-
-    # SAT heartbeat, nominally downlinked in orbit
-    SAT_HEARTBEAT = 0x01
-
-    # SAT TM frames, requested by GS
-    SAT_TM_HAL = 0x02
-    SAT_TM_STORAGE = 0x03
-    SAT_TM_PAYLOAD = 0x04
-
-    # SAT ACK, in response to GS commands
-    SAT_ACK = 0x0F
-
-    # SAT file metadata and file content messages
-    SAT_FILE_METADATA = 0x10
-    SAT_FILE_PKT = 0x20
-
-    """
-    GS commands to be uplinked to Argus
-    """
-
-    # GS commands SC responds to with an ACK
-    GS_CMD_FORCE_REBOOT = 0x40
-    GS_CMD_SWITCH_TO_STATE = 0x41
-
-    # GS commands SC responds to with a frame
-    GS_CMD_REQUEST_TM_HEARTBEAT = 0x46
-
-    # GS commands SC responds to with file MD or packets
-    GS_CMD_FILE_METADATA = 0x4A
-    GS_CMD_FILE_PKT = 0x4B
-
-
-# -------------------- TODO: replace with Database functions ---------------- #
-# Mockup of Database
-class FIFOQueue:
-    def __init__(self):
-        self.queue = deque()
-
-    def enqueue(self, item):
-        self.queue.append(item)
-
-    def dequeue(self):
-        if self.is_empty():
-            return "Queue is empty"
-        return self.queue.popleft()
-
-    def is_empty(self):
-        return len(self.queue) == 0
-
-    def size(self):
-        return len(self.queue)
-
-
-queue = FIFOQueue()
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
-queue.enqueue(MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT)
-# queue.enqueue(0x4B)
-# --------------------------------------------------------------------------- #
-
 
 class GS:
     # Radio abstraction for GS
@@ -103,6 +45,10 @@ class GS:
     # State ground station
     state = GS_COMMS_STATE.RX
 
+    # Source header parameters
+    rx_src_id = 0x00
+    rx_dst_id = 0x00
+
     # RX message parameters
     # received msg parameters
     rx_msg_id = 0x00
@@ -118,11 +64,12 @@ class GS:
     payload = bytearray()
 
     # File metadata parameters
-    file_id = 0x01
+    file_id = 0x0A # IMG
     file_time = 1738351687
     file_size = 0x00
     file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
     flag_rq_file = False  # testing in the lab - once the image is received
+    filename = ""
 
     # File TX parameters
     gs_msg_sq = 0  # if file is multiple packets - number of packets received
@@ -133,12 +80,20 @@ class GS:
 
     @classmethod
     def unpack_header(self):
-        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]),
-                                        byteorder="big")
-        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3],
-                                        byteorder="big")
-        self.rx_msg_size = int.from_bytes(self.rx_message[3:4],
-                                          byteorder="big")
+        # Unpack source header
+        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
+        self.rx_message = self.rx_message[2:]
+
+        # TODO: Error checking based on source header
+        print("Source Header:", self.rx_src_id, self.rx_dst_id)
+        
+        # Unpack message header
+        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
+        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
+
+        # TODO: Error checking based on message header
 
     @classmethod
     def unpack_message(self):
@@ -173,12 +128,23 @@ class GS:
                     # No file on satellite
                     self.flag_rq_file = False
 
-                    # Dequeue the next command
+
                     # TODO: Check if queue has a valid message ID
-                    if queue.is_empty():
-                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    else:
-                        self.rq_cmd = queue.dequeue()
+                    if (config.MODE == "DB"):
+                        if (db_services.commands_available()): # if db is empty 
+                            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                        else:
+                            self.rq_cmd = db_services.get_latest_command() # get top of the queue
+                            print ("Latest Command2:", self.rq_cmd)
+                            # db_services.remove_latest_command()
+
+
+                    # TODO: Check if queue has a valid message ID
+                    elif (config.MODE == "DBG"):
+                        if queue.is_empty():
+                            self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                        else:
+                            self.rq_cmd = queue.dequeue()
 
                 else:
                     # Valid file on satellite
@@ -186,14 +152,25 @@ class GS:
                     self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
 
             else:
-                # Dequeue the next command
-                # TODO: Check if queue has a valid message ID
-                # TODO: remove default - handled in CI 
-                if queue.is_empty():
-                    print("Queue is empty")
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                else:
-                    self.rq_cmd = queue.dequeue()
+                # db_services.add_downlink_data(self.rx_msg_id, self.rx_message)
+                if (config.MODE == "DB"):
+                    # TODO: Check if queue has a valid message ID
+                    # TODO: remove default - handled in CI
+                    if (db_services.commands_available() == None): #if db is empty 
+                        print("CI is empty")
+                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    else:
+                        self.rq_cmd = db_services.get_latest_command()
+                        print ("Latest Command1:", self.rq_cmd)
+                        db_services.remove_latest_command()
+
+
+                elif (config.MODE == "DBG"):
+                    if queue.is_empty():
+                        print("Queue is empty, requesting heartbeats")
+                        self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                    else:
+                        self.rq_cmd = queue.dequeue()
 
             self.state = GS_COMMS_STATE.TX
 
@@ -210,9 +187,7 @@ class GS:
         if rx_obj is not None:
             # Message from SAT
             self.rx_message = rx_obj.message
-            print(
-                f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}"
-            )
+            print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
             self.rx_time = time.monotonic()
 
             self.unpack_message()
@@ -222,7 +197,7 @@ class GS:
                 print("Currently in RX state")
                 print("///////////////////////")
 
-                if self.rx_msg_id == MSG_ID.SAT_HEARTBEAT:
+                if self.rx_msg_id == MSG_ID.SAT_TM_NOMINAL:
                     self.received_Heartbeat()
 
                 elif self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
@@ -233,6 +208,13 @@ class GS:
 
                 elif self.rx_msg_id == MSG_ID.SAT_ACK:
                     self.received_Ack()
+                
+                elif self.rx_msg_id == MSG_ID.SAT_TM_STORAGE:
+                    self.received_TM_Storage()
+                
+                elif self.rx_msg_id == MSG_ID.SAT_TM_HAL:
+                    self.received_TM_HAL()
+
                 else:
                     # Invalid RX message ID
                     print(f"**** Received invalid msgID {self.rx_msg_id} ****")
@@ -259,8 +241,9 @@ class GS:
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
             if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+                print ("hi")
                 self.transmit_SwitchToState()
-            
+
             elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
                 self.transmit_ForceReboot()
 
@@ -269,7 +252,19 @@ class GS:
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
                 self.transmit_Filepkt()
-
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
+                self.transmit_uplink_orbit_reference()
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
+                self.transmit_uplink_time_reference()
+            
+            elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
+                self.rq_sq = 0
+                self.rq_len = 0
+                self.payload = bytearray()
+                print(f"Transmitting CMD: Request Telemetry - {self.rq_cmd}")
+                
             else:
                 # Set RQ message parameters for HB request
                 self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
@@ -283,7 +278,8 @@ class GS:
                 + self.rq_len.to_bytes(1, "big")
             )
 
-            tx_message = tx_header + self.payload
+            tx_message = bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID]) + tx_header + self.payload      #src/dst header
+            # tx_message = tx_header + self.payload
 
             # header_from and header_to set to 255
             self.radiohead.send_message(tx_message, 255, 1)
@@ -294,35 +290,40 @@ class GS:
 
         else:
             self.state = GS_COMMS_STATE.RX
-            raise Exception (f"[COMMS ERROR] Not in TX state. In {self.state}")
-            
+            raise Exception(f"[COMMS ERROR] Not in TX state. In {self.state}")
 
     # ------------------------ Received Information ------------------------- #
     @classmethod
     def received_Heartbeat(self):
         # Message is a heartbeat with TM frame, unpack
-        TelemetryUnpacker.unpack_tm_frame(self.rx_message)
+        tm_data = TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
         print("**** Received HB ****")
+
+        if (config.MODE == "DB"):
+            db_services.add_Telemetry(MSG_ID.SAT_TM_NOMINAL, tm_data)
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"TEL:{self.rx_message}")
+
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
+
 
     @classmethod
     def received_Metadata(self):
         # Message is file metadata
         print("**** Received file metadata ****")
+        print(f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
 
         # Unpack file parameters
-        self.file_id = int.from_bytes((self.rx_message[4:5]),
-                                      byteorder="big")
-        self.file_time = int.from_bytes((self.rx_message[5:9]),
-                                        byteorder="big")
-        self.file_size = int.from_bytes((self.rx_message[9:13]),
-                                        byteorder="big")
-        self.file_target_sq = int.from_bytes((self.rx_message[13:15]),
-                                             byteorder="big")
+        self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder="big")
+        self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder="big")
+        self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder="big")
+        self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder="big")
 
-        # print(f"File parameters: ID: {self.file_id}, Time: {self.file_time},
-        # Size: {self.file_size}, Message Count: {self.file_target_sq}")
+        if (config.MODE == "DB"):
+                db_services.add_File_Meta_Data([self.file_id, self.file_time,self.file_size, self.file_target_sq])
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
 
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
@@ -332,6 +333,7 @@ class GS:
         # TODO: Check for file ID and file time
         # Message is file packet
         print(f"Received PKT {self.rx_msg_sq} out of {self.file_target_sq}")
+        print(f"File data {self.rx_message}")
         # print(self.rx_message[9:self.rx_msg_size + 9])
 
         # Check internal gs_msg_sq against rx_msg_sq
@@ -341,15 +343,15 @@ class GS:
 
         else:
             # Append packet to file_array
-            self.file_array.append(self.rx_message[9: self.rx_msg_size + 9])
+            self.file_array.append(self.rx_message[9 : self.rx_msg_size + 9])
             # Increment sequence counter
             self.gs_msg_sq += 1
 
         # Compare gs_msg_sq to file_target_sq
         if self.gs_msg_sq == self.file_target_sq:
             # Write file to memory
-            filename = "test_image.jpg"
-            write_bytes = open(filename, "wb")
+            self.filename = "test_image.jpg"
+            write_bytes = open(self.filename, "wb")
 
             # Write all bytes to the file
             for i in range(self.file_target_sq):
@@ -367,12 +369,49 @@ class GS:
             self.state = GS_COMMS_STATE.TX
         else:
             print("**** Received all packets. RX --> DB_RW ****")
+
+            if (config.MODE == "DB"):
+                 db_services.add_File_Packet(self.file_array, self.file_id, self.filename)
+            elif (config.MODE == "DBG"):
+                db_queue.enqueue(f"PKT:{self.file_array},{self.file_id}, {self.filename}")
+        
+ 
             self.state = GS_COMMS_STATE.DB_RW
             self.database_readwrite()
 
     @classmethod
     def received_Ack(self):
         print(f"**** Received an ACK {self.rx_message} ****")
+
+        if (config.MODE == "DB"):
+            db_services.add_Ack()
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"ACK:{self.rx_message}")
+
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
+
+    @classmethod
+    def received_TM_Storage(self):
+        print(f"**** Received an TM_Storage {self.rx_message} ****")
+        tm_data = TelemetryUnpacker.unpack_tm_frame_storage(self.rx_message)
+        if (config.MODE == "DB"):
+            db_services.add_Telemetry(MSG_ID.SAT_TM_STORAGE, tm_data)
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"TM_Storage:{self.rx_message}")
+
+        self.state = GS_COMMS_STATE.DB_RW
+        self.database_readwrite()
+
+    @classmethod
+    def received_TM_HAL(self):
+        print(f"**** Received an TM_Storage {self.rx_message} ****")
+        tm_data = TelemetryUnpacker.unpack_tm_frame_HAL(self.rx_message)
+        if (config.MODE == "DB"):
+            db_services.add_Telemetry(MSG_ID.SAT_TM_HAL, tm_data)
+        elif (config.MODE == "DBG"):
+            db_queue.enqueue(f"TM_HAL:{self.rx_message}")
+
         self.state = GS_COMMS_STATE.DB_RW
         self.database_readwrite()
 
@@ -385,7 +424,7 @@ class GS:
         self.rq_len = 5
 
         # Temporary hardcoding for GS_CMD_SWITCH_TO_STATE
-        self.payload = ((0x01).to_bytes(1, 'big') + (20).to_bytes(4, 'big'))
+        self.payload = (0x01).to_bytes(1, "big") + (20).to_bytes(4, "big")
         print("Transmitting CMD: GS_CMD_SWITCH_TO_STATE")
 
     @classmethod
@@ -406,8 +445,9 @@ class GS:
         self.rq_len = 5
 
         # Request specific file ID and time of creation
-        self.payload = (self.file_id.to_bytes(1, "big") +
-                        self.file_time.to_bytes(4, "big"))
+        self.payload = self.file_id.to_bytes(1, "big") + self.file_time.to_bytes(
+            4, "big"
+        )
         print("Transmitting CMD: GS_CMD_FILE_METADATA")
 
     @classmethod
@@ -423,3 +463,67 @@ class GS:
             + self.rq_sq.to_bytes(2, "big")
         )
         print("Transmitting CMD: GS_CMD_FILE_PKT")
+
+    @classmethod
+    def transmit_uplink_time_reference(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 4
+
+        # Temporary hardcoding for GS_CMD_UPLINK_TIME_REFERENCE
+        self.payload = (1739727422).to_bytes(4, "big") #time reference param
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_TIME_REFERENCE")
+    
+    @classmethod
+    def transmit_uplink_orbit_reference(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 28
+
+        # Temporary hardcoding for GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.payload = (
+            (1739727422).to_bytes(4, "big") + #time reference
+            (0).to_bytes(4, "big") + #position
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big") +
+            (0).to_bytes(4, "big") + #velocity
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big")
+        )
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_ORBIT_REFERENCE")
+
+# -------------------- TODO: replace with Database functions ---------------- #
+# Mockup of Command Interface
+class fifoQ:
+    def __init__(self):
+        self.queue = deque()
+
+    def enqueue(self, item):
+        self.queue.append(item)
+
+    def dequeue(self):
+        if self.is_empty():
+            return "Queue is empty"
+        return self.queue.popleft()
+
+    def is_empty(self):
+        return len(self.queue) == 0
+
+    def size(self):
+        return len(self.queue)
+
+# Command Interface Instantiation 
+queue = fifoQ()
+queue.enqueue(MSG_ID.GS_CMD_SWITCH_TO_STATE)
+queue.enqueue(MSG_ID.GS_CMD_FORCE_REBOOT)
+queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
+# queue.enqueue(0x4B)
+
+# Database Queue Instantiation
+db_queue = fifoQ()
+
+# --------------------------------------------------------------------------- #
