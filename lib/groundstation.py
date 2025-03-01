@@ -98,22 +98,27 @@ class GSStateMachine:
             if GS.flag_rq_file:     
                 print ("1.1")
                 GS.state = GS_COMMS_STATE.TRANSMIT_CMD 
+                GS.transmit_cmd()
             elif GS.cmd_received: 
                 print ("1.2")
-                GS.state = GS_COMMS_STATE.UNPACK_AND_WRITE         
+                GS.state = GS_COMMS_STATE.UNPACK_AND_WRITE  
+                GS.unpack_and_write()
             else: 
                 print ("1.3")
                 GS.state = GS_COMMS_STATE.RECEIVE_PKT
+                GS.receive_pkt()
 
         elif GS.state == GS_COMMS_STATE.UNPACK_AND_WRITE:
             print ("2")
             GS.state = GS_COMMS_STATE.READ_AND_PACK
+            GS.read_and_pack()
         
         elif GS.state == GS_COMMS_STATE.READ_AND_PACK:
             print ("3")
             if GS.read_and_pack_success:
                 print ("3.1")
                 GS.state = GS_COMMS_STATE.TRANSMIT_CMD
+                GS.transmit_cmd()
             else: 
                 print ("3.2")
                 GS.state = GS_COMMS_STATE.ERROR_HANDLER #TODO: Logic 
@@ -121,9 +126,12 @@ class GSStateMachine:
         elif GS.state == GS_COMMS_STATE.TRANSMIT_CMD:
             print ("4")
             GS.state = GS_COMMS_STATE.RECEIVE_PKT
+            GS.receive_pkt()
         else:
             print ("5")
             GS.state = GS_COMMS_STATE.RECEIVE_PKT
+            GS.receive_pkt()
+
 
 
 class DB_MOCK:
@@ -207,6 +215,7 @@ class GS:
             self.rx_msg_id, self.rx_msg_sq, self.rx_msg_size = Unpacking.unpack_message(self.rx_message)
             
             self.cmd_received = True # For state transition 
+
             # self.gpio_controller.turn_rx_off()
             GPIO.output(self.rx_ctrl, GPIO.LOW)
             GSStateMachine.transition_state()
@@ -229,6 +238,7 @@ class GS:
         # TODO: Integrate with @Alexis 
         # self.file_id, self.file_time, self.filesize, self.file_target_sq = new_unpacking_function(self.rx_message)
         # add_downlink_data(self.rx_msg_id, self.rx_message)
+        GSStateMachine.transition_state()
 
     @classmethod
     def read_and_pack(self):
@@ -237,20 +247,39 @@ class GS:
         print("# ----------------------------------- #")
         #TODO: Integrate filepkt code 
 
-         # ----------------------- TO REMOVE AFTER NEW PACKING FUNCTION --------------- #
-        if self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
+        # ----------------------- TO REMOVE AFTER NEW PACKING FUNCTION --------------- #
+        if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+            self.transmit_SwitchToState()
+            GSStateMachine.transition_state()
+
+        elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
+            self.transmit_ForceReboot()
+            GSStateMachine.transition_state()
+
+        elif self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
             self.transmit_Metadata()
+            GSStateMachine.transition_state()
 
         elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
             self.transmit_Filepkt()
-
+            GSStateMachine.transition_state()
+        
+        elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
+            self.rq_sq = 0
+            self.rq_len = 0
+            self.payload = bytearray()
+            print(f"Transmitting CMD: Request Telemetry - {self.rq_cmd}")
+            GSStateMachine.transition_state()
         else:
             # Set RQ message parameters for HB request
             self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
             self.rq_sq = 0
             self.rq_len = 0
             self.payload = bytearray()
+            GSStateMachine.transition_state()
+
         # --------------------------------------------------------------------------- #
+
 
         if self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
             print("read_and_pack: SAT_FILE_METADATA")
@@ -261,27 +290,32 @@ class GS:
                 # No file on satellite
                 self.flag_rq_file = False
 
-                if (db_services.commands_available() == None): # if db is empty 
+                if (queue.is_empty()): # if db is empty 
                     self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
                     self.read_and_pack_success = False
                 else:
-                    self.rq_cmd = db_services.get_latest_command()
+                    # self.rq_cmd = db_services.get_latest_command()
+                    self.rq_cmd = queue.dequeue()
                     self.read_and_pack_success = True
-
             
             else:
                 # Valid file on satellite
                 self.flag_rq_file = True
                 self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
                 self.read_and_pack_success = True
+            GSStateMachine.transition_state()
 
         else:
-            if (db_services.commands_available() == None): # if db is empty 
-                    self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
-                    self.read_and_pack_success = False
+            if (queue.is_empty()): # if db is empty 
+                print ("Queue is empty")
+                self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+                self.read_and_pack_success = False
             else:
-                self.rq_cmd = db_services.get_latest_command()
+                # self.rq_cmd = db_services.get_latest_command()
+                self.rq_cmd = queue.dequeue()
                 self.read_and_pack_success = True
+            print("Processing CMD: ", self.rq_cmd)
+            GSStateMachine.transition_state()
 
         
 
@@ -296,7 +330,12 @@ class GS:
         # TODO: Integrate with @Alexis
         # self.rq_cmd, self.rq_sq, self.rq_len, self.payload = new_packing_function(self.rq_cmd)
 
-
+        if (config.MODE == "DBG"):
+            if queue.is_empty():
+                self.rq_cmd = MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT
+            else:
+                self.rq_cmd = queue.dequeue()
+        
         tx_header = (
             self.rq_cmd.to_bytes(1, "big")
             + self.rq_sq.to_bytes(2, "big")
@@ -309,7 +348,7 @@ class GS:
         self.radiohead.send_message(tx_message, 255, 1)
         # self.gpio_controller.turn_tx_off()
         GPIO.output(self.rx_ctrl, GPIO.LOW)
-
+        GSStateMachine.transition_state()
 
     @staticmethod
     def error_handler():
@@ -318,32 +357,6 @@ class GS:
 
 
     # ----------------------- TO REMOVE AFTER NEW (UN)PACKING FUNCTION --------------- #
-    
-    @classmethod
-    def transmit_Metadata(self):
-        # Set RQ message parameters for MD request
-        self.rq_sq = 0
-        self.rq_len = 5
-
-        # Request specific file ID and time of creation
-        self.payload = self.file_id.to_bytes(1, "big") + self.file_time.to_bytes(
-            4, "big"
-        )
-        print("Transmitting CMD: GS_CMD_FILE_METADATA")
-
-    @classmethod
-    def transmit_Filepkt(self):
-        # Set RQ message parameters for PKT
-        self.rq_sq = self.gs_msg_sq
-        self.rq_len = 7
-
-        # Request specific file ID and time of creation
-        self.payload = (
-            self.file_id.to_bytes(1, "big")
-            + self.file_time.to_bytes(4, "big")
-            + self.rq_sq.to_bytes(2, "big")
-        )
-        print("Transmitting CMD: GS_CMD_FILE_PKT")
 
     @classmethod
     def received_Heartbeat(self):
@@ -429,6 +442,86 @@ class GS:
 
     # Other methods (received_* and transmit_* methods) will use the DB service and GPIO/Radio abstractions
 
+     # ----------------------- Transmitted Information ----------------------- #
+    @classmethod
+    def transmit_SwitchToState(self):
+        # Set RQ message parameters to force a state change on SC
+        self.rq_cmd = MSG_ID.GS_CMD_SWITCH_TO_STATE
+        self.rq_sq = 0
+        self.rq_len = 5
+
+        # Temporary hardcoding for GS_CMD_SWITCH_TO_STATE
+        self.payload = (0x01).to_bytes(1, "big") + (20).to_bytes(4, "big")
+        print("Transmitting CMD: GS_CMD_SWITCH_TO_STATE")
+
+    @classmethod
+    def transmit_ForceReboot(self):
+        # Set RQ message parameters
+        self.rq_cmd = MSG_ID.GS_CMD_FORCE_REBOOT
+        self.rq_sq = 0
+        self.rq_len = 0
+
+        # No payload for this command
+        self.payload = bytearray()
+        print("Transmitting CMD: GS_CMD_FORCE_REBOOT")
+
+    @classmethod
+    def transmit_Metadata(self):
+        # Set RQ message parameters for MD request
+        self.rq_sq = 0
+        self.rq_len = 5
+
+        # Request specific file ID and time of creation
+        self.payload = self.file_id.to_bytes(1, "big") + self.file_time.to_bytes(
+            4, "big"
+        )
+        print("Transmitting CMD: GS_CMD_FILE_METADATA")
+
+    @classmethod
+    def transmit_Filepkt(self):
+        # Set RQ message parameters for PKT
+        self.rq_sq = self.gs_msg_sq
+        self.rq_len = 7
+
+        # Request specific file ID and time of creation
+        self.payload = (
+            self.file_id.to_bytes(1, "big")
+            + self.file_time.to_bytes(4, "big")
+            + self.rq_sq.to_bytes(2, "big")
+        )
+        print("Transmitting CMD: GS_CMD_FILE_PKT")
+
+    @classmethod
+    def transmit_uplink_time_reference(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 4
+
+        # Temporary hardcoding for GS_CMD_UPLINK_TIME_REFERENCE
+        self.payload = (1739727422).to_bytes(4, "big") #time reference param
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_TIME_REFERENCE")
+    
+    @classmethod
+    def transmit_uplink_orbit_refere(self):
+        # Set RQ message parameters for PKT
+        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.rq_sq = 0
+        self.rq_len = 28
+
+        # Temporary hardcoding for GS_CMD_UPLINK_ORBIT_REFERENCE
+        self.payload = (
+            (1739727422).to_bytes(4, "big") + #time reference
+            (0).to_bytes(4, "big") + #position
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big") +
+            (0).to_bytes(4, "big") + #velocity
+            (1).to_bytes(4, "big") +
+            (2).to_bytes(4, "big")
+        )
+        
+        print("Transmitting CMD: GS_CMD_UPLINK_ORBIT_REFERENCE")
 
 class Unpacking: 
     @classmethod
