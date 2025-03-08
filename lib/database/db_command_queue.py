@@ -1,5 +1,7 @@
 from lib.database.db_server import query
-
+"""
+    Handles all the interactions with the command queue from the database
+"""
 
 def get_latest_command():
     """Retrieve the latest command on the command queue (TX table)"""

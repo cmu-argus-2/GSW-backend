@@ -19,11 +19,12 @@ class CDH_IDX:
     DETUMBLING_ERROR_FLAG = const(7)
 
 
-TM_METADATA_FORMAT = {
+METADATA_FORMAT = {
     "METADATA": [
-        ("MSG_ID", "I"),
-        ("SEQ_CNT", "H"),  # Unsigned Short (2 Bytes)
-        ("SIZE", "I"),
+        ("FILE_ID", "B"),  # Unsigned Byte (1 byte)
+        ("FILE_TIME", "I"),  # Unsigned Long (4 bytes)
+        ("FILE_SIZE", "I"), # Unsigned Long (4 bytes)
+        ("FILE_TARGET_SQ", "H"),  # Unsigned Short (2 Bytes)
     ]
 }
 
@@ -201,6 +202,7 @@ DATA_FORMATS = {
     MSG_ID.SAT_TM_STORAGE: TM_STORAGE_FORMAT,
     MSG_ID.SAT_TM_HAL: TM_HAL_FORMAT,
     MSG_ID.SAT_ACK: ACK_FORMAT,
+    MSG_ID.SAT_FILE_METADATA: METADATA_FORMAT,
 }
 
 

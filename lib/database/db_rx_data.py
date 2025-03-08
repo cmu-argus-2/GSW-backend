@@ -1,7 +1,7 @@
 import json
 
 from lib.database.db_server import query
-from lib.gs_constants import MSG_ID
+from lib.gs_constants import MSG_ID, TM_FRAME_TYPES
 from lib.telemetry.unpacking import TelemetryUnpacker
 
 
@@ -47,6 +47,7 @@ def add_Telemetry(msg_id, tm_data):
 
 
 def add_Ack(msg_data=None):
+    # TODO: More specific ACK ?
     result = query(
         """
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
@@ -85,7 +86,8 @@ def add_File_Meta_Data(msg_data):
     )
 
 
-def add_File_Packet(msg_data, file_id, file_name):
+def add_File_Packet(msg_data, file_db_id):
+    # TODO: need to further integrate this
     encoded_list = [data.hex() for data in msg_data]
     file_pkt = json.dumps(encoded_list)
     print(file_pkt)
@@ -99,21 +101,24 @@ def add_File_Packet(msg_data, file_id, file_name):
         )
         WHERE rx_data->>'file_id' = %s;
         """,
-        (file_pkt, str(file_id)),
+        (file_pkt, str(file_db_id)),
     )
 
 
-# def add_downlink_data(data_type, args_list=None):
-#     """Handle adding data that was downlinked to the database (RX table)"""
+def add_downlink_data(msg_id, rx_message):
+    """Handle adding data that was downlinked to the database (RX table)"""
+    # TODO: error handling for unpack frame
+    unpacked_data = TelemetryUnpacker.unpack_frame(msg_id, rx_message)
 
-#     # Insert TM frames into db
-#     if data_type == MSG_ID.SAT_HEARTBEAT or data_type == MSG_ID.SAT_TM_HAL or data_type == MSG_ID.SAT_TM_PAYLOAD or MSG_ID.SAT_TM_STORAGE:
-#         add_Telemetry(args_list)
+    # Insert TM frames into db
+    if msg_id in TM_FRAME_TYPES:
+        add_Telemetry(msg_id, unpacked_data)
 
-#     # Insert file metadata into db
-#     elif data_type == MSG_ID.SAT_FILE_METADATA:
-#         add_File_Meta_Data()
+    # Insert file metadata into db
+    elif msg_id == MSG_ID.SAT_FILE_METADATA:
+        add_File_Meta_Data(unpacked_data)
 
-#     #Insert ACK into db
-#     elif data_type == MSG_ID.SAT_ACK:
-#         add_Ack()
+    #Insert ACK into db
+    elif msg_id == MSG_ID.SAT_ACK:
+        add_Ack()
+
