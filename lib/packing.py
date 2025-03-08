@@ -48,8 +48,9 @@ class TRANSMITTED:
         return rq_cmd, rq_sq, rq_len, payload
 
     
-    def transmit_Filepkt(self, gs_msg_sq):
+    def transmit_Filepkt(self, gs_msg_sq, file_id, file_time, rq_sq):
         # Set RQ message parameters for PKT
+        rq_cmd = MSG_ID.GS_CMD_FILE_PKT
         rq_sq = gs_msg_sq
         rq_len = 7
 
@@ -60,6 +61,7 @@ class TRANSMITTED:
             + rq_sq.to_bytes(2, "big")
         )
         print("Transmitting CMD: GS_CMD_FILE_PKT")
+        
         return rq_cmd, rq_sq, rq_len, payload
 
     

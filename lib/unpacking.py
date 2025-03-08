@@ -21,21 +21,23 @@ class RECEIVED:
 
 
     @classmethod
-    def received_Metadata(self):
+    def received_Metadata(self, rx_message):
         # Message is file metadata
         print("**** Received file metadata ****")
-        print(f"META:[{GS.file_id}, {GS.file_time}, {GS.file_size}, {GS.file_target_sq}]")
-
+        # print(f"META:[{file_id}, {file_time}, {file_size}, {file_target_sq}]")
+        # print ("rx_message", rx_message)
         # Unpack file parameters
-        GS.file_id = int.from_bytes((GS.rx_message[4:5]), byteorder="big")
-        GS.file_time = int.from_bytes((GS.rx_message[5:9]), byteorder="big")
-        GS.file_size = int.from_bytes((GS.rx_message[9:13]), byteorder="big")
-        GS.file_target_sq = int.from_bytes((GS.rx_message[13:15]), byteorder="big")
+        file_id = int.from_bytes((rx_message[4:5]), byteorder="big")
+        file_time = int.from_bytes((rx_message[5:9]), byteorder="big")
+        file_size = int.from_bytes((rx_message[9:13]), byteorder="big")
+        file_target_sq = int.from_bytes((rx_message[13:15]), byteorder="big")
 
-        if (config.MODE == "DB"):
-                db_services.add_File_Meta_Data([GS.file_id, GS.file_time, GS.file_size, GS.file_target_sq])
-        elif (config.MODE == "DBG"):
-            db_queue.enqueue(f"META:[{GS.file_id}, {GS.file_time}, {GS.file_size}, {GS.file_target_sq}]")
+        return file_id, file_time, file_size, file_target_sq
+
+        # if (config.MODE == "DB"):
+        #         db_services.add_File_Meta_Data([GS.file_id, GS.file_time, GS.file_size, GS.file_target_sq])
+        # elif (config.MODE == "DBG"):
+        #     db_queue.enqueue(f"META:[{GS.file_id}, {GS.file_time}, {GS.file_size}, {GS.file_target_sq}]")
 
     @classmethod
     def received_Filepkt(self):

@@ -9,6 +9,7 @@ from lib.database import db_services
 from lib.radio_utils import initialize_radio
 
 from lib.packing import TRANSMITTED
+from lib.unpacking import RECEIVED
 from lib.gs_constants import MSG_ID
 
 
@@ -94,6 +95,7 @@ class GS:
                 print("DB_RW: msg.id: SAT_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
+                print(f"META2:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]")
                 if (
                     self.file_id == 0x00
                     or self.file_size == 0
@@ -168,6 +170,7 @@ class GS:
             # self.rx_src_id, self.rx_dst_id, self.rx_msg_id, self.rx_message, self.rx_msg_sq, self.rx_msg_size = UNPACKING.unpack_message()
             self.unpack_message()
 
+
             if self.state == GS_COMMS_STATE.RX:
                 print("////////////////////////")
                 print("Currently in RX state")
@@ -181,8 +184,7 @@ class GS:
                     self.database_readwrite()
 
                 elif self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
-                    print("**** Received file metadata ****")
-                    # self.received_Metadata()
+                    self.file_id, self.file_time, self.file_size, self.file_target_sq = RECEIVED.received_Metadata(self.rx_message)
 
                     self.state = GS_COMMS_STATE.DB_RW
                     self.database_readwrite()
@@ -246,7 +248,7 @@ class GS:
                 self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Metadata(self, self.file_id, self.file_time)
 
             elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq)
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq, self.file_id, self.file_time, self.rq_sq)
             
             elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
                 self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_orbit_reference(self)
@@ -345,17 +347,17 @@ class GS:
     @classmethod
     def unpack_header(self):
         # Unpack source header
-        rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
-        rx_message = self.rx_message[2:]
+        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
+        self.rx_message = self.rx_message[2:]
 
         # TODO: Error checking based on source header
-        print("Source Header:", rx_src_id, rx_dst_id)
+        print("Source Header:", self.rx_src_id, self.rx_dst_id)
         
         # Unpack message header
-        self.rx_msg_id = int.from_bytes((rx_message[0:1]), byteorder="big")
-        self.rx_msg_sq = int.from_bytes(rx_message[1:3], byteorder="big")
-        self.rx_msg_size = int.from_bytes(rx_message[3:4], byteorder="big")
+        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
+        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
 
         # return rx_src_id, rx_dst_id, rx_msg_id, rx_message, rx_msg_sq, rx_msg_size
 
@@ -396,6 +398,7 @@ class fifoQ:
 # Command Interface Instantiation 
 queue = fifoQ()
 queue.enqueue(MSG_ID.GS_CMD_SWITCH_TO_STATE)
+queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
 queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
 queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
 # queue.enqueue(0x4B)
