@@ -73,18 +73,17 @@ class GS:
                 TRANSMIT.rq_cmd = FILETRANSFER.initiate_file_transfer_sq()
 
             else:
-                if config.MODE == "DB":
-                    # TODO: Check if queue has a valid message ID
-                    if commands_available() == None: 
-                        print("CQ is empty")
-                        TRANSMIT.rq_cmd = {
-                            "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                            "args": {},
-                        }
-                    else:
-                        TRANSMIT.rq_cmd = get_latest_command()
-                        print("Latest Command:", TRANSMIT.rq_cmd)
-                        remove_latest_command()
+                # TODO: Check if queue has a valid message ID
+                if commands_available() == None: 
+                    print("CQ is empty")
+                    TRANSMIT.rq_cmd = {
+                        "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
+                        "args": {},
+                    }
+                else:
+                    TRANSMIT.rq_cmd = get_latest_command()
+                    print("Latest Command:", TRANSMIT.rq_cmd)
+                    remove_latest_command()
 
 
             self.state = GS_COMMS_STATE.TX

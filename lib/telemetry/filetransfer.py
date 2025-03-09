@@ -5,7 +5,6 @@ import lib.config as config
 
 if config.MODE == "DB":
     from lib.database.db_command_queue import get_latest_command, remove_latest_command, commands_available
-    from lib.database.db_rx_data import add_downlink_data, add_File_Packet
 elif config.MODE == "DBG":
     from lib.database.debug_queue import get_latest_command, remove_latest_command, commands_available
 
@@ -61,16 +60,15 @@ class FILETRANSFER:
             # No file on satellite
             FILETRANSFER.flag_rq_file = False
 
-            if config.MODE == "DB":
-                if commands_available() == None: 
-                    return {
-                        "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                        "args": {},
-                    }
-                else:
-                    return (
-                        get_latest_command()
-                    )  
+            if commands_available() == None: 
+                return {
+                    "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
+                    "args": {},
+                }
+            else:
+                return (
+                    get_latest_command()
+                )  
         else:
             # Valid file on satellite
             self.flag_rq_file = True
