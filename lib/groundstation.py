@@ -202,55 +202,17 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if TRANSMIT.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_SwitchToState(self)
-
-            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_ForceReboot(self)
-
-            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Metadata(self, self.file_id, self.file_time)
-
-            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq, self.file_id, self.file_time, self.rq_sq)
-            
-            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_orbit_reference(self)
-            
-            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
-                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_time_reference(self)
-            
-            elif TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
-                self.rq_sq = 0
-                self.rq_len = 0
-                self.payload = bytearray()
-                print(f"Transmitting CMD: Request Telemetry - {TRANSMIT.rq_cmd}")
-
+            if TRANSMIT.rq_cmd in MSG_ID.VALID_TX_MSG_IDS:
+                TRANSMIT.pack()
             else:
                 # Set RQ message parameters for HB request
                 TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": []}
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
-            
-
-            tx_header = (
-                TRANSMIT.rq_cmd["id"].to_bytes(1, "big")
-                + self.rq_sq.to_bytes(2, "big")
-                + self.rq_len.to_bytes(1, "big")
-            )
-
-            tx_message = (
-                bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID]) + tx_header + self.payload
-            )  # src/dst header
-            # tx_message = tx_header + self.payload
-
-            # new generic packer
-            tx_message = CommandPacker.pack(TRANSMIT.rq_cmd)  # need to test this
-            print(tx_message)
 
             # header_from and header_to set to 255
-            self.radiohead.send_message(tx_message, 255, 1)
+            self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
 
             print("Transmitted CMD. TX --> RX")
             self.state = GS_COMMS_STATE.RX
@@ -311,40 +273,6 @@ class GS:
 
             self.state = GS_COMMS_STATE.DB_RW
             self.database_readwrite()
-
-
-
-# class UNPACKING: 
-    # @classmethod
-    # def unpack_header(self):
-    #     # Unpack source header
-    #     RECEIVE.rx_src_id = int.from_bytes((RECEIVE.rx_message[0:1]), byteorder="big")
-    #     RECEIVE.rx_dst_id = int.from_bytes((RECEIVE.rx_message[1:2]), byteorder="big")
-    #     RECEIVE.rx_message = RECEIVE.rx_message[2:]
-
-    #     # TODO: Error checking based on source header
-    #     print("Source Header:", RECEIVE.rx_src_id, RECEIVE.rx_dst_id)
-        
-    #     # Unpack message header
-    #     RECEIVE.rx_msg_id = int.from_bytes((RECEIVE.rx_message[0:1]), byteorder="big")
-    #     RECEIVE.rx_msg_sq = int.from_bytes(RECEIVE.rx_message[1:3], byteorder="big")
-    #     RECEIVE.rx_msg_size = int.from_bytes(RECEIVE.rx_message[3:4], byteorder="big")
-
-    #     # return rx_src_id, rx_dst_id, rx_msg_id, rx_message, rx_msg_sq, rx_msg_size
-
-    #     # TODO: Error checking based on message header
-
-    # @classmethod
-    # def unpack_message(self):
-    #     # Get the current time
-    #     current_time = datetime.datetime.now()
-    #     # Format the current time
-    #     formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
-    #     formatted_time = formatted_time.encode("utf-8")
-
-    #     # Unpack RX message header
-    #     self.unpack_header()
-
 
 
 # -------------------- TODO: replace with Database functions ---------------- #

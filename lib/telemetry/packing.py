@@ -38,7 +38,7 @@ class TRANSMIT:
 
         return metadata + cmd_args["target_state_id"].to_bytes(1, "big") + time_in_state
 
-    def pack_UPLINK_TIME_REFERENCE(self, rq_cmd):
+    def pack_UPLINK_TIME_REFERENCE(self):
         """
         This will pack the command arguments for uplink time reference
         """
@@ -58,7 +58,7 @@ class TRANSMIT:
 
         return metadata + time_reference
 
-    def pack_UPLINK_ORBIT_REFERENCE(self, self.rq_cmd):
+    def pack_UPLINK_ORBIT_REFERENCE(self):
         """
         This will pack the command arguments for uplink orbit reference
         """
@@ -84,7 +84,7 @@ class TRANSMIT:
 
         return metadata + time_reference + pos_x + pos_y + pos_z + vel_x + vel_y + vel_z
 
-    def pack_REQUEST_FILE_METADATA(self, self.rq_cmd):
+    def pack_REQUEST_FILE_METADATA(self):
         cmd_args = self.rq_cmd["args"]
 
         metadata = (
@@ -99,7 +99,7 @@ class TRANSMIT:
 
         return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
 
-    def pack_REQUEST_FILE_PKT(self, self.rq_cmd):
+    def pack_REQUEST_FILE_PKT(self):
         cmd_args = self.rq_cmd["args"]
 
         file_time = pack_unsigned_long_int(cmd_args, "file_time")
@@ -115,7 +115,7 @@ class TRANSMIT:
 
         return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
 
-    def pack(self, self.rq_cmd):
+    def pack(self):
         """
         This will pack and return the tx_message
 
