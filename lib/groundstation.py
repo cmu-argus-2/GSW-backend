@@ -8,8 +8,11 @@ import lib.config as config
 from lib.database import db_command_queue, db_rx_data
 from lib.gs_constants import MSG_ID
 from lib.radio_utils import initialize_radio
+
 from lib.telemetry.packing import CommandPacker
-from lib.telemetry.unpacking import TelemetryUnpacker
+from lib.packing import TRANSMITTED
+from lib.unpacking import RECEIVED
+
 
 """
 GS state functions:
@@ -249,30 +252,25 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if self.rq_cmd["id"] == MSG_ID.GS_CMD_SWITCH_TO_STATE:
-                print("hi")
-                self.transmit_SwitchToState()
+            if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_SwitchToState(self)
 
-            elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FORCE_REBOOT:
-                self.transmit_ForceReboot()
+            elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_ForceReboot(self)
 
-            elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_METADATA:
-                self.transmit_Metadata()
+            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Metadata(self, self.file_id, self.file_time)
 
-            elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_PKT:
-                self.transmit_Filepkt()
-
-            elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
-                self.transmit_uplink_orbit_reference()
-
-            elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
-                self.transmit_uplink_time_reference()
-
-            elif (
-                self.rq_cmd["id"] == MSG_ID.GS_CMD_REQUEST_TM_HAL
-                or self.rq_cmd == MSG_ID.GS_CMD_REQUEST_TM_STORAGE
-                or self.rq_cmd == MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD
-            ):
+            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq, self.file_id, self.file_time, self.rq_sq)
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_orbit_reference(self)
+            
+            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
+                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_time_reference(self)
+            
+            elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
@@ -311,48 +309,6 @@ class GS:
         else:
             self.state = GS_COMMS_STATE.RX
             raise Exception(f"[COMMS ERROR] Not in TX state. In {self.state}")
-
-    # ------------------------ Received Information ------------------------- #
-    @classmethod
-    def received_Heartbeat(self):
-        # Message is a heartbeat with TM frame, unpack
-        tm_data = TelemetryUnpacker.unpack_tm_frame_nominal(self.rx_message)
-        TelemetryUnpacker.unpack_frame(self.rx_msg_id, self.rx_message)
-        print("**** Received HB ****")
-
-        if config.MODE == "DB":
-            db_rx_data.add_Telemetry(MSG_ID.SAT_TM_NOMINAL, tm_data)
-        elif config.MODE == "DBG":
-            db_queue.enqueue(f"TEL:{self.rx_message}")
-
-        self.state = GS_COMMS_STATE.DB_RW
-        self.database_readwrite()
-
-    @classmethod
-    def received_Metadata(self):
-        # Message is file metadata
-        print("**** Received file metadata ****")
-        print(
-            f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]"
-        )
-
-        # Unpack file parameters
-        self.file_id = int.from_bytes((self.rx_message[4:5]), byteorder="big")
-        self.file_time = int.from_bytes((self.rx_message[5:9]), byteorder="big")
-        self.file_size = int.from_bytes((self.rx_message[9:13]), byteorder="big")
-        self.file_target_sq = int.from_bytes((self.rx_message[13:15]), byteorder="big")
-
-        if config.MODE == "DB":
-            db_rx_data.add_File_Meta_Data(
-                [self.file_id, self.file_time, self.file_size, self.file_target_sq]
-            )
-        elif config.MODE == "DBG":
-            db_queue.enqueue(
-                f"META:[{self.file_id}, {self.file_time}, {self.file_size}, {self.file_target_sq}]"
-            )
-
-        self.state = GS_COMMS_STATE.DB_RW
-        self.database_readwrite()
 
     @classmethod
     def received_Filepkt(self):
@@ -429,24 +385,16 @@ class GS:
         # TODO: Error checking based on message header
 
     @classmethod
-    def transmit_uplink_orbit_reference(self):
-        # Set RQ message parameters for PKT
-        self.rq_cmd = MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE
-        self.rq_sq = 0
-        self.rq_len = 28
+    def unpack_message(self):
+        # Get the current time
+        current_time = datetime.datetime.now()
+        # Format the current time
+        formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
+        formatted_time = formatted_time.encode("utf-8")
 
-        # Temporary hardcoding for GS_CMD_UPLINK_ORBIT_REFERENCE
-        self.payload = (
-            (1739727422).to_bytes(4, "big")
-            + (0).to_bytes(4, "big")  # time reference
-            + (1).to_bytes(4, "big")  # position
-            + (2).to_bytes(4, "big")
-            + (0).to_bytes(4, "big")
-            + (1).to_bytes(4, "big")  # velocity
-            + (2).to_bytes(4, "big")
-        )
+        # Unpack RX message header
+        self.unpack_header()
 
-        print("Transmitting CMD: GS_CMD_UPLINK_ORBIT_REFERENCE")
 
 
 # -------------------- TODO: replace with Database functions ---------------- #
