@@ -15,11 +15,13 @@ MSG_LENGTHS = {
 class TRANSMIT:
     # RQ message parameters for commanding SC
     # Request command
-    rq_cmd = {"id": 0x01, "args": []}
+    rq_cmd = {"id": 0x01, "args": {}}
     rq_sq = 0  # sequence command - matters for file
     rq_len = 0  # error checking
     tx_message = []
 
+    # TODO: fix comments
+    @classmethod
     def pack_SWITCH_TO_STATE(self):
         """
         This will back the command arguments for switch to state
@@ -27,9 +29,9 @@ class TRANSMIT:
         cmd_args = self.rq_cmd["args"]
 
         metadata = (
-            MSG_ID.GS_CMD_SWITCH_TO_STATE.to_bytes(1, "big")
-            + (0).to_bytes(2, "big")  # message id
-            + MSG_LENGTHS[MSG_ID.GS_CMD_SWITCH_TO_STATE].to_bytes(  # sequence count
+            MSG_ID.GS_CMD_SWITCH_TO_STATE.to_bytes(1, "big") # message id
+            + (0).to_bytes(2, "big")  # sequence count
+            + MSG_LENGTHS[MSG_ID.GS_CMD_SWITCH_TO_STATE].to_bytes(  
                 1, "big"
             )  # packet length
         )
@@ -38,6 +40,7 @@ class TRANSMIT:
 
         return metadata + cmd_args["target_state_id"].to_bytes(1, "big") + time_in_state
 
+    @classmethod
     def pack_UPLINK_TIME_REFERENCE(self):
         """
         This will pack the command arguments for uplink time reference
@@ -45,9 +48,9 @@ class TRANSMIT:
         cmd_args = self.rq_cmd["args"]
 
         metadata = (
-            MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE.to_bytes(1, "big")
-            + (0).to_bytes(2, "big")  # message id
-            + MSG_LENGTHS[  # sequence count
+            MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE.to_bytes(1, "big") # message id
+            + (0).to_bytes(2, "big")  # sequence count
+            + MSG_LENGTHS[
                 MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE
             ].to_bytes(
                 1, "big"
@@ -58,6 +61,7 @@ class TRANSMIT:
 
         return metadata + time_reference
 
+    @classmethod
     def pack_UPLINK_ORBIT_REFERENCE(self):
         """
         This will pack the command arguments for uplink orbit reference
@@ -84,6 +88,7 @@ class TRANSMIT:
 
         return metadata + time_reference + pos_x + pos_y + pos_z + vel_x + vel_y + vel_z
 
+    @classmethod
     def pack_REQUEST_FILE_METADATA(self):
         cmd_args = self.rq_cmd["args"]
 
@@ -99,6 +104,7 @@ class TRANSMIT:
 
         return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
 
+    @classmethod
     def pack_REQUEST_FILE_PKT(self):
         cmd_args = self.rq_cmd["args"]
 
@@ -114,16 +120,11 @@ class TRANSMIT:
         )
 
         return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
-
+    
+    @classmethod
     def pack(self):
         """
         This will pack and return the tx_message
-
-        usage in groundstation.py
-
-        import CommandPacker
-        tx_message = CommandPacker.pack(rq_cmd)
-        self.radiohead.send_message(tx_message, 255, 1)
         """
         # TODO: print statements for which message was packed
         # pack source and destination headers
@@ -134,32 +135,34 @@ class TRANSMIT:
 
         if self.rq_cmd["id"] == MSG_ID.GS_CMD_SWITCH_TO_STATE:
             # payload = target_state_id (uint8) + time_in_state (uint32)
-            md_payload = self.pack_SWITCH_TO_STATE(self.rq_cmd)
+            md_payload = self.pack_SWITCH_TO_STATE()
+            print("PACKED Switch to State")
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
             # payload = time_reference (uint32)
-            md_payload = self.pack_UPLINK_TIME_REFERENCE(self.rq_cmd)
+            md_payload = self.pack_UPLINK_TIME_REFERENCE()
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
             # payload = time_reference (uint32) + pos_x (int32) + pos_y (int32) + pos_z (int32)
             # + vel_x (int32) + vel_y (int32) + vel_z (int32)
-            md_payload = self.pack_UPLINK_ORBIT_REFERENCE(self.rq_cmd)
+            md_payload = self.pack_UPLINK_ORBIT_REFERENCE()
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_METADATA:
             # payload = file_id (uint8) + file_time (uint32)
-            md_payload = self.pack_REQUEST_FILE_METADATA(self.rq_cmd)
+            md_payload = self.pack_REQUEST_FILE_METADATA()
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_PKT:
             # payload = file_id (uint8) + file_time (uint32) + rq_sq_cnt (uint16)
-            md_payload = self.pack_REQUEST_FILE_PKT(self.rq_cmd)
+            md_payload = self.pack_REQUEST_FILE_PKT()
 
         else:
             # For all other commands that do not have arguments, just pack the command id
             md_payload = (
                 self.rq_cmd["id"].to_bytes(1, "big")
                 + (0).to_bytes(2, "big")
-                + (0).to_bytes(2, "big")
+                + (0).to_bytes(1, "big")
                 + bytearray()
             )
 
         self.tx_message = src_dst_header + md_payload
+        print(f"TX_MESSAGE = {self.tx_message}")

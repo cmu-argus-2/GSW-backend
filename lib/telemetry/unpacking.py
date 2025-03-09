@@ -465,21 +465,21 @@ class RECEIVE:
 
         # get the format and data types for that message
         data_format = DATA_FORMATS[msg_id]
-        print(f"MSG_ID = {msg_id}")
+        # print(f"MSG_ID = {msg_id}")
         msg = msg[4:]
 
         parsed_data = {}
         offset = 0  # This is where we start reading from the first byte
-        print(f"MSG Size = {self.rx_msg_size}")
+        # print(f"MSG Size = {self.rx_msg_size}")
 
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
 
             # Create struct format string dynamically by computing size and getting the format strings
             format_string = "="+"".join([field[1] for field in fields])
-            print(f"{format_string}")
+            # print(f"{format_string}")
             size = struct.calcsize(format_string)
-            print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
+            # print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
             unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
 
             # Map unpacked values to field names for each subsystem
@@ -488,7 +488,7 @@ class RECEIVE:
 
             offset += size  # Move offset forward
 
-        print(parsed_data)
+        # print(parsed_data)
         return parsed_data
 
 

@@ -95,7 +95,7 @@ class GS:
                         if db_command_queue.commands_available():  # if db is empty
                             TRANSMIT.rq_cmd = {
                                 "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                                "args": [],
+                                "args": {},
                             }
                         else:
                             TRANSMIT.rq_cmd = (
@@ -109,7 +109,7 @@ class GS:
                         if queue.is_empty():
                             TRANSMIT.rq_cmd = {
                                 "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                                "args": [],
+                                "args": {},
                             }
                         else:
                             TRANSMIT.rq_cmd = queue.dequeue()
@@ -129,7 +129,7 @@ class GS:
                         print("CQ is empty")
                         TRANSMIT.rq_cmd = {
                             "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                            "args": [],
+                            "args": {},
                         }
                     else:
                         TRANSMIT.rq_cmd = db_command_queue.get_latest_command()
@@ -141,7 +141,7 @@ class GS:
                         print("Queue is empty, requesting heartbeats")
                         TRANSMIT.rq_cmd = {
                             "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
-                            "args": [],
+                            "args": {},
                         }
                     else:
                         TRANSMIT.rq_cmd = queue.dequeue()
@@ -203,11 +203,11 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if TRANSMIT.rq_cmd in MSG_ID.VALID_TX_MSG_IDS:
+            if TRANSMIT.rq_cmd["id"] in MSG_ID.VALID_TX_MSG_IDS:
                 TRANSMIT.pack()
             else:
                 # Set RQ message parameters for HB request
-                TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": []}
+                TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": {}}
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
@@ -301,10 +301,11 @@ class fifoQ:
 
 # Command Interface Instantiation
 queue = fifoQ()
-queue.enqueue(MSG_ID.GS_CMD_SWITCH_TO_STATE)
-queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
-queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
-queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
+# TODO: need to adjust debug queue to match the rq_cmd of the db
+queue.enqueue({"id":MSG_ID.GS_CMD_SWITCH_TO_STATE, "args" : {"time_in_state" : 10, "target_state_id" : 1}})
+# queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
+# queue.enqueue(MSG_ID.GS_CMD_FILE_METADATA)
+# queue.enqueue(MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE)
 # queue.enqueue(0x4B)
 
 # Database Queue Instantiation

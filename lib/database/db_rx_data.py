@@ -36,8 +36,6 @@ def add_Telemetry(msg_id, tm_data):
         msg_name = "SAT_PAYLOAD"
 
     msg_data = json.dumps(tm_data)
-    print(msg_data)
-    print(tm_data)
 
     result = query(
         """

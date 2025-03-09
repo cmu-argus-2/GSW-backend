@@ -15,9 +15,11 @@ def get_latest_command():
     print("Result:", result)
     # TODO: format that so that it returns the arguments as well
     if (result is not None) and result[1] != []:
-        return {"id": result[1][0][1], "args": []}
+        # turn values into ints
+        args = {k: int(val) for k, val in result[1][0][3].items()}
+        return {"id": result[1][0][1], "args": args}
     else:
-        return {"id": 70, "args": []}
+        return {"id": 70, "args": {}}
 
 
 def remove_latest_command():
