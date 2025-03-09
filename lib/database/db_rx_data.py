@@ -1,7 +1,7 @@
 import json
 
 from lib.database.db_server import query
-from lib.gs_constants import MSG_ID, TM_FRAME_TYPES
+from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
 
 
@@ -35,12 +35,14 @@ def add_Telemetry(msg_id, tm_data):
     elif msg_id == MSG_ID.SAT_TM_PAYLOAD:
         msg_name = "SAT_PAYLOAD"
 
-    msg_data = json.dumps(tm_data, indent=4)
+    msg_data = json.dumps(tm_data)
+    print(msg_data)
+    print(tm_data)
 
     result = query(
         """
         INSERT INTO rxData_tb (rx_name, rx_id, rx_type, rx_data)
-        VALUES (%s, %s, %s, %s::jsonb);
+        VALUES (%s, %s, %s, %s::json);
         """,
         (msg_name, msg_id, "telemetry", msg_data),
     )
@@ -112,7 +114,7 @@ def add_downlink_data(msg_id, rx_message):
     unpacked_data = RECEIVE.unpack_frame(msg_id, rx_message)
 
     # Insert TM frames into db
-    if msg_id in TM_FRAME_TYPES:
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
         add_Telemetry(msg_id, unpacked_data)
 
     # Insert file metadata into db

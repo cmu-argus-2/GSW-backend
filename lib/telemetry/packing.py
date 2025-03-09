@@ -1,5 +1,5 @@
 # Extract the arguments and return the payload
-from gs_constants import MSG_ID
+from lib.gs_constants import MSG_ID
 
 from lib.telemetry.helpers import *
 
@@ -18,7 +18,7 @@ class TRANSMIT:
     rq_cmd = {"id": 0x01, "args": []}
     rq_sq = 0  # sequence command - matters for file
     rq_len = 0  # error checking
-    tx_message = bytearray()
+    tx_message = []
 
     def pack_SWITCH_TO_STATE(self):
         """

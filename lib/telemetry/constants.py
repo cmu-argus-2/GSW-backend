@@ -1,4 +1,4 @@
-from gs_constants import MSG_ID
+from lib.gs_constants import MSG_ID
 
 # Index constants for accessing data in the Data Handler
 
@@ -37,7 +37,7 @@ HEARTBEAT_NOMINAL_FORMAT = {
         ("REBOOT_COUNT", "B"),
         ("WATCHDOG_TIMER", "B"),
         ("HAL_BITFLAGS", "B"),
-        ("DETUMBLING_ERROR_FLAG", "B"),
+        ("DETUMBLING_ERROR_FLAG", "B")
     ],
     "EPS": [
         ("EPS_POWER_FLAG", "B"),

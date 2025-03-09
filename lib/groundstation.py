@@ -9,7 +9,8 @@ from lib.database import db_command_queue, db_rx_data
 from lib.gs_constants import MSG_ID
 from lib.radio_utils import initialize_radio
 
-from lib.telemetry.packing import CommandPacker
+from lib.telemetry.packing import TRANSMIT
+from lib.telemetry.unpacking import RECEIVE
 # from lib.packing import TRANSMITTED
 # from lib.unpacking import RECEIVED
 
@@ -221,6 +222,8 @@ class GS:
         else:
             self.state = GS_COMMS_STATE.RX
             raise Exception(f"[COMMS ERROR] Not in TX state. In {self.state}")
+
+        print("Requesting ID:", TRANSMIT.rq_cmd, "SQ:", TRANSMIT.rq_sq)
 
     @classmethod
     def received_Filepkt(self):

@@ -2,6 +2,8 @@
 GS Telemetry Unpacker
 """
 import struct
+import datetime
+import time
 
 from lib.telemetry.constants import *
 from lib.telemetry.helpers import *
@@ -463,16 +465,21 @@ class RECEIVE:
 
         # get the format and data types for that message
         data_format = DATA_FORMATS[msg_id]
+        print(f"MSG_ID = {msg_id}")
+        msg = msg[4:]
 
         parsed_data = {}
         offset = 0  # This is where we start reading from the first byte
+        print(f"MSG Size = {self.rx_msg_size}")
 
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
 
             # Create struct format string dynamically by computing size and getting the format strings
-            format_string = "".join([field[1] for field in fields])
+            format_string = "="+"".join([field[1] for field in fields])
+            print(f"{format_string}")
             size = struct.calcsize(format_string)
+            print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
             unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
 
             # Map unpacked values to field names for each subsystem
@@ -505,4 +512,3 @@ class RECEIVE:
         self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
         self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
         self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
-    
