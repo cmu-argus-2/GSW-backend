@@ -1,8 +1,8 @@
 import RPi.GPIO as GPIO
-from lib.database import db_services
+from lib.database import db_rx_data
 
 from lib.radio_utils import initialize_radio
-from lib.telemetry.unpacking import TelemetryUnpacker
+from lib.telemetry.unpacking import RECEIVE
 from lib.gs_constants import MSG_ID
 
 
@@ -11,7 +11,7 @@ class RECEIVED:
     @classmethod
     def received_Heartbeat(self, rx_message):
         # Message is a heartbeat with TM frame, unpack
-        tm_data = TelemetryUnpacker.unpack_tm_frame_nominal(rx_message)
+        tm_data = RECEIVE.unpack_tm_frame_nominal(rx_message)
         print("**** Received HB ****")
 
         if (config.MODE == "DB"):
@@ -105,7 +105,7 @@ class RECEIVED:
     @classmethod
     def received_TM_Storage(self):
         print(f"**** Received an TM_Storage {self.rx_message} ****")
-        tm_data = TelemetryUnpacker.unpack_tm_frame_storage(self.rx_message)
+        tm_data = RECEIVE.unpack_tm_frame_storage(self.rx_message)
         if (config.MODE == "DB"):
             db_services.add_Telemetry(MSG_ID.SAT_TM_STORAGE, tm_data)
         elif (config.MODE == "DBG"):
@@ -117,7 +117,7 @@ class RECEIVED:
     @classmethod
     def received_TM_HAL(self):
         print(f"**** Received an TM_Storage {self.rx_message} ****")
-        tm_data = TelemetryUnpacker.unpack_tm_frame_HAL(self.rx_message)
+        tm_data = RECEIVE.unpack_tm_frame_HAL(self.rx_message)
         if (config.MODE == "DB"):
             db_services.add_Telemetry(MSG_ID.SAT_TM_HAL, tm_data)
         elif (config.MODE == "DBG"):

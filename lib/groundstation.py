@@ -10,8 +10,8 @@ from lib.gs_constants import MSG_ID
 from lib.radio_utils import initialize_radio
 
 from lib.telemetry.packing import CommandPacker
-from lib.packing import TRANSMITTED
-from lib.unpacking import RECEIVED
+# from lib.packing import TRANSMITTED
+# from lib.unpacking import RECEIVED
 
 
 """
@@ -51,24 +51,6 @@ class GS:
     # State ground station
     state = GS_COMMS_STATE.RX
 
-    # Source header parameters
-    rx_src_id = 0x00
-    rx_dst_id = 0x00
-
-    # RX message parameters
-    # received msg parameters
-    rx_msg_id = 0x00
-    rx_msg_sq = 0
-    rx_msg_size = 0
-    rx_message = []
-
-    # RQ message parameters for commanding SC
-    # Request command
-    rq_cmd = {"id": 0x01, "args": []}
-    rq_sq = 0  # sequence command - matters for file
-    rq_len = 0  # error checking
-    payload = bytearray()
-
     # File metadata parameters
     file_id = 0x0A  # IMG
     file_time = 1738351687
@@ -94,7 +76,7 @@ class GS:
             # TODO: Separate queue for RX and RQ
 
             # Check if we need to start file transfer sequence
-            if self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
+            if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
                 print("DB_RW: msg.id: SAT_FILE_METADATA")
                 # Check if file metadata was valid
                 # TODO: Better error checking
@@ -110,58 +92,58 @@ class GS:
                     # TODO: Check if queue has a valid message ID
                     if config.MODE == "DB":
                         if db_command_queue.commands_available():  # if db is empty
-                            self.rq_cmd = {
+                            TRANSMIT.rq_cmd = {
                                 "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
                                 "args": [],
                             }
                         else:
-                            self.rq_cmd = (
+                            TRANSMIT.rq_cmd = (
                                 db_command_queue.get_latest_command()
                             )  # get top of the queue
-                            print("Latest Command2:", self.rq_cmd)
+                            print("Latest Command2:", TRANSMIT.rq_cmd)
                             # db_command_queue.remove_latest_command()
 
                     # TODO: Check if queue has a valid message ID
                     elif config.MODE == "DBG":
                         if queue.is_empty():
-                            self.rq_cmd = {
+                            TRANSMIT.rq_cmd = {
                                 "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
                                 "args": [],
                             }
                         else:
-                            self.rq_cmd = queue.dequeue()
+                            TRANSMIT.rq_cmd = queue.dequeue()
 
                 else:
                     # Valid file on satellite
                     self.flag_rq_file = True
-                    self.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
+                    TRANSMIT.rq_cmd = MSG_ID.GS_CMD_FILE_PKT
                     print ("found valid file")
 
             else:
-                # db_rx_data.add_downlink_data(self.rx_msg_id, self.rx_message)
+                # db_rx_data.add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
                 if config.MODE == "DB":
                     # TODO: Check if queue has a valid message ID
                     # TODO: remove default - handled in CI
                     if db_command_queue.commands_available() == None:  # if db is empty
                         print("CQ is empty")
-                        self.rq_cmd = {
+                        TRANSMIT.rq_cmd = {
                             "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
                             "args": [],
                         }
                     else:
-                        self.rq_cmd = db_command_queue.get_latest_command()
-                        print("Latest Command1:", self.rq_cmd)
+                        TRANSMIT.rq_cmd = db_command_queue.get_latest_command()
+                        print("Latest Command1:", TRANSMIT.rq_cmd)
                         db_command_queue.remove_latest_command()
 
                 elif config.MODE == "DBG":
                     if queue.is_empty():
                         print("Queue is empty, requesting heartbeats")
-                        self.rq_cmd = {
+                        TRANSMIT.rq_cmd = {
                             "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
                             "args": [],
                         }
                     else:
-                        self.rq_cmd = queue.dequeue()
+                        TRANSMIT.rq_cmd = queue.dequeue()
 
             self.state = GS_COMMS_STATE.TX
 
@@ -177,59 +159,27 @@ class GS:
 
         if rx_obj is not None:
             # Message from SAT
-            self.rx_message = rx_obj.message
+            RECEIVE.rx_message = rx_obj.message
             print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
             self.rx_time = time.monotonic()
 
-            # self.rx_src_id, self.rx_dst_id, self.rx_msg_id, self.rx_message, self.rx_msg_sq, self.rx_msg_size = UNPACKING.unpack_message()
-            self.unpack_message()
-
+            # RECEIVE.rx_src_id, RECEIVE.rx_dst_id, RECEIVE.rx_msg_id, RECEIVE.rx_message, RECEIVE.rx_msg_sq, RECEIVE.rx_msg_size = UNPACKING.unpack_message()
+            RECEIVE.unpack_message_header()
 
             if self.state == GS_COMMS_STATE.RX:
                 print("////////////////////////")
                 print("Currently in RX state")
                 print("///////////////////////")
-
-                if self.rx_msg_id == MSG_ID.SAT_TM_NOMINAL:
-                    # self.received_Heartbeat(rx_message)
-                    print("**** Received HB ****")
-                    
+        
+                if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
+                    self.received_Filepkt()
+                elif RECEIVE.rx_msg_id in MSG_ID.VALID_RX_MSG_IDS:
+                    db_rx_data.add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
                     self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-
-                elif self.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
-                    self.file_id, self.file_time, self.file_size, self.file_target_sq = RECEIVED.received_Metadata(self.rx_message)
-
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-
-                elif self.rx_msg_id == MSG_ID.SAT_FILE_PKT:
-                    self.received_Filepkt()            
-
-                elif self.rx_msg_id == MSG_ID.SAT_ACK:
-                    print(f"**** Received an ACK {self.rx_message} ****")
-                    # self.received_Ack()
-
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-                
-                elif self.rx_msg_id == MSG_ID.SAT_TM_STORAGE:
-                    print(f"**** Received an TM_Storage {self.rx_message} ****")
-                    # self.received_TM_Storage()
-
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-                
-                elif self.rx_msg_id == MSG_ID.SAT_TM_HAL:
-                    print(f"**** Received an TM_Storage {self.rx_message} ****")
-                    # self.received_TM_HAL()
-
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()
-
+                    self.database_readwrite()            
                 else:
                     # Invalid RX message ID
-                    print(f"**** Received invalid msgID {self.rx_msg_id} ****")
+                    print(f"**** Received invalid msgID {RECEIVE.rx_msg_id} ****")
                     self.state = GS_COMMS_STATE.RX
 
             print("\n")
@@ -252,40 +202,40 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            if self.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_SwitchToState(self)
+            if TRANSMIT.rq_cmd == MSG_ID.GS_CMD_SWITCH_TO_STATE:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_SwitchToState(self)
 
-            elif self.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_ForceReboot(self)
+            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FORCE_REBOOT:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_ForceReboot(self)
 
-            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Metadata(self, self.file_id, self.file_time)
+            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FILE_METADATA:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Metadata(self, self.file_id, self.file_time)
 
-            elif self.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq, self.file_id, self.file_time, self.rq_sq)
+            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_FILE_PKT:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_Filepkt(self, self.gs_msg_sq, self.file_id, self.file_time, self.rq_sq)
             
-            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_orbit_reference(self)
+            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_orbit_reference(self)
             
-            elif self.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
-                self.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_time_reference(self)
+            elif TRANSMIT.rq_cmd == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
+                TRANSMIT.rq_cmd, self.rq_sq, self.rq_len, self.payload = TRANSMITTED.transmit_uplink_time_reference(self)
             
-            elif self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or self.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
+            elif TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_HAL or TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_STORAGE or TRANSMIT.rq_cmd ==  MSG_ID.GS_CMD_REQUEST_TM_PAYLOAD:
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
-                print(f"Transmitting CMD: Request Telemetry - {self.rq_cmd}")
+                print(f"Transmitting CMD: Request Telemetry - {TRANSMIT.rq_cmd}")
 
             else:
                 # Set RQ message parameters for HB request
-                self.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": []}
+                TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": []}
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()
             
 
             tx_header = (
-                self.rq_cmd["id"].to_bytes(1, "big")
+                TRANSMIT.rq_cmd["id"].to_bytes(1, "big")
                 + self.rq_sq.to_bytes(2, "big")
                 + self.rq_len.to_bytes(1, "big")
             )
@@ -296,7 +246,7 @@ class GS:
             # tx_message = tx_header + self.payload
 
             # new generic packer
-            tx_message = CommandPacker.pack(self.rq_cmd)  # need to test this
+            tx_message = CommandPacker.pack(TRANSMIT.rq_cmd)  # need to test this
             print(tx_message)
 
             # header_from and header_to set to 255
@@ -314,18 +264,18 @@ class GS:
     def received_Filepkt(self):
         # TODO: Check for file ID and file time
         # Message is file packet
-        print(f"Received PKT {self.rx_msg_sq} out of {self.file_target_sq}")
-        print(f"File data {self.rx_message}")
-        # print(self.rx_message[9:self.rx_msg_size + 9])
+        print(f"Received PKT {RECEIVE.rx_msg_sq} out of {self.file_target_sq}")
+        print(f"File data {RECEIVE.rx_message}")
+        # print(RECEIVE.rx_message[9:RECEIVE.rx_msg_size + 9])
 
         # Check internal gs_msg_sq against rx_msg_sq
-        if self.gs_msg_sq != self.rx_msg_sq:
+        if self.gs_msg_sq != RECEIVE.rx_msg_sq:
             # Sequence count mismatch
             print("ERROR: Sequence count mismatch")
 
         else:
             # Append packet to file_array
-            self.file_array.append(self.rx_message[9 : self.rx_msg_size + 9])
+            self.file_array.append(RECEIVE.rx_message[9 : RECEIVE.rx_msg_size + 9])
             # Increment sequence counter
             self.gs_msg_sq += 1
 
@@ -365,35 +315,35 @@ class GS:
 
 
 # class UNPACKING: 
-    @classmethod
-    def unpack_header(self):
-        # Unpack source header
-        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
-        self.rx_message = self.rx_message[2:]
+    # @classmethod
+    # def unpack_header(self):
+    #     # Unpack source header
+    #     RECEIVE.rx_src_id = int.from_bytes((RECEIVE.rx_message[0:1]), byteorder="big")
+    #     RECEIVE.rx_dst_id = int.from_bytes((RECEIVE.rx_message[1:2]), byteorder="big")
+    #     RECEIVE.rx_message = RECEIVE.rx_message[2:]
 
-        # TODO: Error checking based on source header
-        print("Source Header:", self.rx_src_id, self.rx_dst_id)
+    #     # TODO: Error checking based on source header
+    #     print("Source Header:", RECEIVE.rx_src_id, RECEIVE.rx_dst_id)
         
-        # Unpack message header
-        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
-        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
+    #     # Unpack message header
+    #     RECEIVE.rx_msg_id = int.from_bytes((RECEIVE.rx_message[0:1]), byteorder="big")
+    #     RECEIVE.rx_msg_sq = int.from_bytes(RECEIVE.rx_message[1:3], byteorder="big")
+    #     RECEIVE.rx_msg_size = int.from_bytes(RECEIVE.rx_message[3:4], byteorder="big")
 
-        # return rx_src_id, rx_dst_id, rx_msg_id, rx_message, rx_msg_sq, rx_msg_size
+    #     # return rx_src_id, rx_dst_id, rx_msg_id, rx_message, rx_msg_sq, rx_msg_size
 
-        # TODO: Error checking based on message header
+    #     # TODO: Error checking based on message header
 
-    @classmethod
-    def unpack_message(self):
-        # Get the current time
-        current_time = datetime.datetime.now()
-        # Format the current time
-        formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
-        formatted_time = formatted_time.encode("utf-8")
+    # @classmethod
+    # def unpack_message(self):
+    #     # Get the current time
+    #     current_time = datetime.datetime.now()
+    #     # Format the current time
+    #     formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
+    #     formatted_time = formatted_time.encode("utf-8")
 
-        # Unpack RX message header
-        self.unpack_header()
+    #     # Unpack RX message header
+    #     self.unpack_header()
 
 
 

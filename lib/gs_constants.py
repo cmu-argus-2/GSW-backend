@@ -51,3 +51,14 @@ class MSG_ID:
     # GS commands SC responds to with file MD or packets
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
+
+    VALID_RX_MSG_IDS = [
+        SAT_HEARTBEAT, 
+        SAT_TM_NOMINAL, 
+        SAT_TM_HAL, 
+        SAT_TM_STORAGE, 
+        SAT_TM_PAYLOAD, 
+        SAT_ACK, 
+        SAT_FILE_METADATA, 
+        SAT_FILE_PKT
+    ]

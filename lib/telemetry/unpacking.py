@@ -14,7 +14,7 @@ GPS_NUM = 21
 STORAGE_NUM = 19
 
 
-class TelemetryUnpacker:
+class RECEIVE:
     _msg_id = 0
     _seq_cnt = 0
     _size = 0
@@ -24,6 +24,17 @@ class TelemetryUnpacker:
     _data_ADCS = [0] * ADCS_NUM
     _data_GPS = [0] * GPS_NUM
     _data_STORAGE = [0] * STORAGE_NUM
+
+    # Source header parameters
+    rx_src_id = 0x00
+    rx_dst_id = 0x00
+
+    # RX message parameters
+    # received msg parameters
+    rx_msg_id = 0x00
+    rx_msg_sq = 0
+    rx_msg_size = 0
+    rx_message = []
 
     @classmethod
     def unpack_tm_frame_nominal(self, msg):
@@ -472,4 +483,26 @@ class TelemetryUnpacker:
 
         print(parsed_data)
         return parsed_data
+
+
+    @classmethod
+    def unpack_message_header(self):
+        # Get the current time
+        current_time = datetime.datetime.now()
+        # Format the current time
+        formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
+        formatted_time = formatted_time.encode("utf-8")
+
+        # Unpack RX message header
+        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
+        self.rx_message = self.rx_message[2:]
+
+        # TODO: Error checking based on source header
+        print("Source Header:", self.rx_src_id, self.rx_dst_id)
+        
+        # Unpack message header
+        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
+        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
+        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
     

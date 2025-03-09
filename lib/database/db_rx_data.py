@@ -2,7 +2,7 @@ import json
 
 from lib.database.db_server import query
 from lib.gs_constants import MSG_ID, TM_FRAME_TYPES
-from lib.telemetry.unpacking import TelemetryUnpacker
+from lib.telemetry.unpacking import RECEIVE
 
 
 def handle_command_ACK(ack):
@@ -108,7 +108,8 @@ def add_File_Packet(msg_data, file_db_id):
 def add_downlink_data(msg_id, rx_message):
     """Handle adding data that was downlinked to the database (RX table)"""
     # TODO: error handling for unpack frame
-    unpacked_data = TelemetryUnpacker.unpack_frame(msg_id, rx_message)
+    # TODO: add print statements to each received message
+    unpacked_data = RECEIVE.unpack_frame(msg_id, rx_message)
 
     # Insert TM frames into db
     if msg_id in TM_FRAME_TYPES:
