@@ -77,7 +77,7 @@ class GS:
                 if commands_available() == None: 
                     print("CQ is empty")
                     TRANSMIT.rq_cmd = {
-                        "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
+                        "id": MSG_ID.GS_CMD_REQUEST_TM_NOMINAL,
                         "args": {},
                     }
                 else:
@@ -160,7 +160,7 @@ class GS:
                 TRANSMIT.pack()
             else:
                 # Set RQ message parameters for HB request
-                TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT, "args": {}}
+                TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_NOMINAL, "args": {}}
                 self.rq_sq = 0
                 self.rq_len = 0
                 self.payload = bytearray()

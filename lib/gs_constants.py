@@ -15,7 +15,7 @@ class MSG_ID:
     SAT_HEARTBEAT = 0x01
 
     # SAT TM frames, requested by GS
-    SAT_TM_NOMINAL = 0x05
+    SAT_TM_NOMINAL = 0x05 # A requested nominal frame
     SAT_TM_HAL = 0x02
     SAT_TM_STORAGE = 0x03
     SAT_TM_PAYLOAD = 0x04
@@ -43,7 +43,7 @@ class MSG_ID:
     GS_CMD_DOWNLINK_ALL_FILES = 0x4D
 
     # GS commands SC responds to with a frame
-    GS_CMD_REQUEST_TM_HEARTBEAT = 0x46
+    GS_CMD_REQUEST_TM_NOMINAL = 0x46
     GS_CMD_REQUEST_TM_HAL = 0x47
     GS_CMD_REQUEST_TM_STORAGE = 0x48
     GS_CMD_REQUEST_TM_PAYLOAD = 0x49
@@ -70,7 +70,7 @@ class MSG_ID:
         GS_CMD_TURN_OFF_PAYLOAD,
         GS_CMD_SCHEDULE_OD_EXPERIMENT,
         GS_CMD_DOWNLINK_ALL_FILES,
-        GS_CMD_REQUEST_TM_HEARTBEAT,
+        GS_CMD_REQUEST_TM_NOMINAL,
         GS_CMD_REQUEST_TM_HAL,
         GS_CMD_REQUEST_TM_STORAGE,
         GS_CMD_REQUEST_TM_PAYLOAD,
