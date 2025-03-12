@@ -18,6 +18,9 @@ class FILETRANSFER:
 
     @classmethod
     def receiving_multipkt(self): 
+        print (f"Received PKT {RECEIVE.rx_msg_sq} out of {RECEIVE.file_target_sq}")
+
+        print ("HELLO:", RECEIVE.gs_msg_sq, RECEIVE.rx_msg_sq)
         if RECEIVE.gs_msg_sq != RECEIVE.rx_msg_sq: 
             print ("ERROR: Sequence count mismatch")
         else: 
@@ -63,7 +66,7 @@ class FILETRANSFER:
         else:
             # Valid file on satellite
             RECEIVE.flag_rq_file = True
-            return {"id": MSG_ID.GS_CMD_FILE_PKT, "args" : {"file_id": 10, "file_time": int(time.time()), "rq_sq_cnt": 1}}
+            return {"id": MSG_ID.GS_CMD_FILE_PKT, "args" : {"file_id": 10, "file_time": int(time.time()), "rq_sq_cnt": RECEIVE.gs_msg_sq}}
         
 
 

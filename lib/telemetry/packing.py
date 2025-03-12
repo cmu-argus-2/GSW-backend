@@ -1,6 +1,6 @@
 # Extract the arguments and return the payload
 from lib.gs_constants import MSG_ID
-
+from lib.telemetry.unpacking import RECEIVE
 from lib.telemetry.helpers import *
 
 MSG_LENGTHS = {
@@ -109,7 +109,7 @@ class TRANSMIT:
         cmd_args = self.rq_cmd["args"]
 
         file_time = pack_unsigned_long_int(cmd_args, "file_time")
-        rq_sq_cnt = pack_unsigned_short_int(cmd_args, "rq_sq_cnt")
+        rq_sq_cnt = pack_unsigned_short_int([RECEIVE.gs_msg_sq], 0)
 
         metadata = (
             MSG_ID.GS_CMD_FILE_PKT.to_bytes(1, "big")
@@ -119,7 +119,7 @@ class TRANSMIT:
             )  # packet length
         )
 
-        return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
+        return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time + rq_sq_cnt
     
     @classmethod
     def pack(self):
@@ -136,7 +136,6 @@ class TRANSMIT:
         if self.rq_cmd["id"] == MSG_ID.GS_CMD_SWITCH_TO_STATE:
             # payload = target_state_id (uint8) + time_in_state (uint32)
             md_payload = self.pack_SWITCH_TO_STATE()
-            print("PACKED Switch to State")
 
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE:
             # payload = time_reference (uint32)
@@ -154,6 +153,7 @@ class TRANSMIT:
         elif self.rq_cmd["id"] == MSG_ID.GS_CMD_FILE_PKT:
             # payload = file_id (uint8) + file_time (uint32) + rq_sq_cnt (uint16)
             md_payload = self.pack_REQUEST_FILE_PKT()
+            print("PACKED GS_CMD_FILE_PKT")
 
         else:
             # For all other commands that do not have arguments, just pack the command id
@@ -165,4 +165,3 @@ class TRANSMIT:
             )
 
         self.tx_message = src_dst_header + md_payload
-        print(f"TX_MESSAGE = {self.tx_message}")

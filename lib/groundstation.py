@@ -113,27 +113,28 @@ class GS:
                 print("////////////////////////")
                 print("Currently in RX state")
                 print("///////////////////////")
-        
-                if RECEIVE.rx_msg_id in MSG_ID.VALID_RX_MSG_IDS:
-                    print("entered received downlink")
-                    add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
-                    self.state = GS_COMMS_STATE.DB_RW
-                    self.database_readwrite()        
-                
-                elif RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
-                    print ("hi")
+
+                print("what is going on: rx_msg_id", RECEIVE.rx_msg_id)
+
+                if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
                     FILETRANSFER.receiving_multipkt()
-                    
-                    if FILETRANSFER.flag_rq_file is True:
+
+                    if RECEIVE.flag_rq_file is True:
                         print("**** Received PKT. RX --> TX ****")
                         self.state = GS_COMMS_STATE.TX
                     else:
                         print("**** Received all packets. RX --> DB_RW ****")
 
-                        add_File_Packet(FILETRANSFER.file_array, FILETRANSFER.file_id, FILETRANSFER.filename)
+                        add_File_Packet(RECEIVE.file_array, RECEIVE.file_id, RECEIVE.filename)
 
                         self.state = GS_COMMS_STATE.DB_RW
-                        self.database_readwrite()          
+                        self.database_readwrite()    
+                
+                elif RECEIVE.rx_msg_id in MSG_ID.VALID_RX_MSG_IDS:
+                    add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
+                    self.state = GS_COMMS_STATE.DB_RW
+                    self.database_readwrite()        
+                          
                 
                 else:
                     # Invalid RX message ID
