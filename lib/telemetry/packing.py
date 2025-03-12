@@ -93,9 +93,9 @@ class TRANSMIT:
         cmd_args = self.rq_cmd["args"]
 
         metadata = (
-            MSG_ID.GS_CMD_FILE_METADATA.to_bytes(1, "big")
-            + (0).to_bytes(2, "big")  # message id
-            + MSG_LENGTHS[MSG_ID.GS_CMD_FILE_METADATA].to_bytes(  # sequence count
+            MSG_ID.GS_CMD_FILE_METADATA.to_bytes(1, "big") # message id
+            + (0).to_bytes(2, "big")  # sequence count
+            + MSG_LENGTHS[MSG_ID.GS_CMD_FILE_METADATA].to_bytes( 
                 1, "big"
             )  # packet length
         )
@@ -109,7 +109,7 @@ class TRANSMIT:
         cmd_args = self.rq_cmd["args"]
 
         file_time = pack_unsigned_long_int(cmd_args, "file_time")
-        rq_sq_cnt = pack_unsigned_short_int(cmd_args, "request_sequence_count")
+        rq_sq_cnt = pack_unsigned_short_int(cmd_args, "rq_sq_cnt")
 
         metadata = (
             MSG_ID.GS_CMD_FILE_PKT.to_bytes(1, "big")

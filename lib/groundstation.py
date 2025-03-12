@@ -19,6 +19,7 @@ if config.MODE == "DB":
     from lib.database.db_rx_data import add_downlink_data, add_File_Packet
 elif config.MODE == "DBG":
     from lib.database.debug_queue import get_latest_command, remove_latest_command, commands_available
+    from lib.database.debug_queue import add_downlink_data, add_File_Packet
 
 
 """
@@ -71,6 +72,7 @@ class GS:
             
             if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
                 TRANSMIT.rq_cmd = FILETRANSFER.initiate_file_transfer_sq()
+                print ("NOW:", TRANSMIT.rq_cmd)
 
             else:
                 # TODO: Check if queue has a valid message ID
@@ -113,11 +115,13 @@ class GS:
                 print("///////////////////////")
         
                 if RECEIVE.rx_msg_id in MSG_ID.VALID_RX_MSG_IDS:
+                    print("entered received downlink")
                     add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
                     self.state = GS_COMMS_STATE.DB_RW
                     self.database_readwrite()        
                 
                 elif RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
+                    print ("hi")
                     FILETRANSFER.receiving_multipkt()
                     
                     if FILETRANSFER.flag_rq_file is True:

@@ -38,6 +38,18 @@ class RECEIVE:
     rx_msg_size = 0
     rx_message = []
 
+    # File metadata parameters
+    file_id = 0x0A  # IMG
+    file_time = 1738351687
+    file_size = 0x00
+    file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
+    flag_rq_file = False  # testing in the lab - once the image is received
+    filename = ""
+
+    # File TX parameters
+    gs_msg_sq = 0  # if file is multiple packets - number of packets received
+    file_array = []
+
     @classmethod
     def unpack_tm_frame_nominal(self, msg):
         """

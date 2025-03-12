@@ -1,5 +1,6 @@
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
+import time
 
 import lib.config as config
 
@@ -15,66 +16,55 @@ class FILETRANSFER:
     Contains code for the multi packet file transfer mechanisms
     """
 
-    # File metadata parameters
-    file_id = 0x0A  # IMG
-    file_time = 1738351687
-    file_size = 0x00
-    file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
-    flag_rq_file = False  # testing in the lab - once the image is received
-    filename = ""
-
-    # File TX parameters
-    gs_msg_sq = 0  # if file is multiple packets - number of packets received
-    file_array = []
-
-
     @classmethod
     def receiving_multipkt(self): 
-        if self.gs_msg_sq != RECEIVE.rx_msg_sq: 
+        if RECEIVE.gs_msg_sq != RECEIVE.rx_msg_sq: 
             print ("ERROR: Sequence count mismatch")
         else: 
-            self.file_array.append(RECEIVE.rx_message[9 : RECEIVE.rx_msg_size + 9])
-            self.gs_msg_sq += 1
+            RECEIVE.file_array.append(RECEIVE.rx_message[9 : RECEIVE.rx_msg_size + 9])
+            RECEIVE.gs_msg_sq += 1
         
-        if self.gs_msg_sq == self.file_target_sq: 
+        if RECEIVE.gs_msg_sq == RECEIVE.file_target_sq: 
             # TODO: change the extension based on what we receive
-            self.filename = "test_image.jpg"
-            write_bytes = open(self.filename, "wb")
+            RECEIVE.filename = "test_image.jpg"
+            write_bytes = open(RECEIVE.filename, "wb")
 
-            for i in range(self.file_target_sq):
-                write_bytes.write(self.file_array[i])
+            for i in range(RECEIVE.file_target_sq):
+                write_bytes.write(RECEIVE.file_array[i])
             
             write_bytes.close()
 
-            self.flag_rq_file = False
+            RECEIVE.flag_rq_file = False
 
     @classmethod 
     def initiate_file_transfer_sq(self): 
         print("SAT_FILE_METADATA requested. Initiating file transfers")
             # TODO: Better error checking
+        print(f"{RECEIVE.file_size}, {RECEIVE.file_target_sq}")
         if (
-            FILETRANSFER.file_id == 0x00
-            or FILETRANSFER.file_size == 0
-            or FILETRANSFER.file_target_sq == 0
+            RECEIVE.file_id == 0x00
+            or RECEIVE.file_size == 0
+            or RECEIVE.file_target_sq == 0
         ):
             # No file on satellite
-            FILETRANSFER.flag_rq_file = False
+            RECEIVE.flag_rq_file = False
 
             if commands_available() == None: 
                 return {
-                    "id": MSG_ID.GS_CMD_REQUEST_TM_HEARTBEAT,
+                    "id": MSG_ID.GS_CMD_REQUEST_TM_NOMINAL,
                     "args": {},
                 }
             else:
+                latest = get_latest_command()
+                remove_latest_command()
                 return (
-                    get_latest_command()
+                    latest
                 )  
         else:
             # Valid file on satellite
-            self.flag_rq_file = True
-            return MSG_ID.GS_CMD_FILE_PKT
-
-
+            RECEIVE.flag_rq_file = True
+            return {"id": MSG_ID.GS_CMD_FILE_PKT, "args" : {"file_id": 10, "file_time": int(time.time()), "rq_sq_cnt": 1}}
+        
 
 
 

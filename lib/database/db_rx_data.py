@@ -65,11 +65,18 @@ def add_Ack(msg_data=None):
 
 
 def add_File_Meta_Data(msg_data):
+    # Update the file parameters to initiate file packet
+
+    RECEIVE.file_id = msg_data[0]
+    RECEIVE.file_time = msg_data[1]
+    RECEIVE.file_size = msg_data[2]
+    RECEIVE.file_target_sq = msg_data[3]
+
     msg_obj = {
         "file_id": msg_data[0],
         "file_time": msg_data[1],
         "file_size": msg_data[2],
-        "file_rq_sq": msg_data[3],
+        "file_rq_sq": msg_data[3]
     }
     file_MD = json.dumps(msg_obj)
     result = query(
