@@ -40,8 +40,8 @@ def size():
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 3, "file_time": int(time.time())}})
 
 # Sending TM commands
-add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
-#add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
+#add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
+add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
 
 
 def add_File_Packet(msg_data, file_db_id):
