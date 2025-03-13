@@ -28,7 +28,12 @@ class FILETRANSFER:
         
         if RECEIVE.gs_msg_sq == RECEIVE.file_target_sq: 
             # TODO: change the extension based on what we receive
-            RECEIVE.filename = "test_image.jpg"
+
+            if RECEIVE.file_id == 0x0A:
+                RECEIVE.filename = RECEIVE.file_id + "_" + RECEIVE.file_time + ".jpg"
+            else:
+                RECEIVE.filename = RECEIVE.file_id + "_" + RECEIVE.file_time + ".bin"
+
             write_bytes = open(RECEIVE.filename, "wb")
 
             for i in range(RECEIVE.file_target_sq):
