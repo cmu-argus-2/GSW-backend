@@ -171,9 +171,9 @@ TM_STORAGE_FORMAT = {
         # COMMAND Storage
         ("COMMAND_NUM_FILES", "I"),
         ("COMMAND_DIR_SIZE", "I"),
-        # IMG Storage
-        ("IMG_NUM_FILES", "I"),
-        ("IMG_DIR_SIZE", "I"),
+        # # IMG Storage
+        # ("IMG_NUM_FILES", "I"),
+        # ("IMG_DIR_SIZE", "I"),
     ],
 }
 

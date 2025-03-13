@@ -490,7 +490,7 @@ class RECEIVE:
 
         parsed_data = {}
         offset = 0  # This is where we start reading from the first byte
-        # print(f"MSG Size = {self.rx_msg_size}")
+        print(f"MSG Size = {self.rx_msg_size}")
 
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
@@ -500,17 +500,18 @@ class RECEIVE:
             # print(f"{format_string}")
             size = struct.calcsize(format_string)
             # print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
-            try: 
-                unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
+            # try: 
+            unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
 
-                # Map unpacked values to field names for each subsystem
-                for i, (field_name, _) in enumerate(fields):
-                    parsed_data[subsystem][field_name] = unpacked_values[i]
+            # Map unpacked values to field names for each subsystem
+            for i, (field_name, _) in enumerate(fields):
+                parsed_data[subsystem][field_name] = unpacked_values[i]
 
-                offset += size  # Move offset forward
+            offset += size  # Move offset forward
             
-            except struct.error: 
-                print ("\u001b[31m[ERROR] Unsuccessful unpacking of message\u001b[0m")
+            # except struct.error: 
+            #     print(struct.error)
+            #     print ("\u001b[31m[ERROR] Unsuccessful unpacking of message\u001b[0m")
 
 
         print(parsed_data)
