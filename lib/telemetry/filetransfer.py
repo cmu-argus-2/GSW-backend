@@ -42,7 +42,11 @@ class FILETRANSFER:
             write_bytes.close()
 
             RECEIVE.flag_rq_file = False
+
             RECEIVE.gs_msg_sq = 0
+            RECEIVE.rx_msg_sq = 0
+            RECEIVE.file_target_sq = 0
+            RECEIVE.file_array = []
 
     @classmethod 
     def initiate_file_transfer_sq(self): 
