@@ -31,18 +31,18 @@ def size():
 
 # TODO: need to adjust debug queue to match the rq_cmd of the db
 # # Sending Ack commands 
-# add_new_command({"id":MSG_ID.GS_CMD_SWITCH_TO_STATE, "args" : {"time_in_state" : 10, "target_state_id" : 1}})
-# add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
-# add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
+add_new_command({"id":MSG_ID.GS_CMD_SWITCH_TO_STATE, "args" : {"time_in_state" : 10, "target_state_id" : 1}})
+add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
+
 # add_new_command({"id":MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE, "args" : {"time_reference": 1741539508, "position_x": 0, "position_y": 1, "position_z": 3, "velocity_x": 4, "velocity_y": 5, "velocity_z": 6}})
 
 # Sending File commands
-# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 3, "file_time": int(time.time())}})
+# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
 
 # Sending TM commands
-#add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
-add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
-
+add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
+# add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
+add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
 
 def add_File_Packet(msg_data, file_db_id):
     print ("Add file pkt ")

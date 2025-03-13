@@ -165,15 +165,9 @@ TM_STORAGE_FORMAT = {
         # PAYLOAD Storage
         ("PAYLOAD_NUM_FILES", "I"),
         ("PAYLOAD_DIR_SIZE", "I"),
-        # THERMAL Storage
-        ("THERMAL_NUM_FILES", "I"),
-        ("THERMAL_DIR_SIZE", "I"),
         # COMMAND Storage
         ("COMMAND_NUM_FILES", "I"),
         ("COMMAND_DIR_SIZE", "I"),
-        # # IMG Storage
-        # ("IMG_NUM_FILES", "I"),
-        # ("IMG_DIR_SIZE", "I"),
     ],
 }
 
