@@ -1,4 +1,5 @@
 from lib.gs_constants import MSG_ID
+from lib.telemetry.constants import file_tags_str
 from lib.telemetry.unpacking import RECEIVE
 import time
 
@@ -18,7 +19,7 @@ class FILETRANSFER:
 
     @classmethod
     def receiving_multipkt(self): 
-        print (f"Received PKT {RECEIVE.rx_msg_sq} out of {RECEIVE.file_target_sq}")
+        print (f"Received PKT {RECEIVE.rx_msg_sq} out of {RECEIVE.file_target_sq - 1}")
 
         if RECEIVE.gs_msg_sq != RECEIVE.rx_msg_sq: 
             print ("ERROR: Sequence count mismatch")
@@ -27,12 +28,11 @@ class FILETRANSFER:
             RECEIVE.gs_msg_sq += 1
         
         if RECEIVE.gs_msg_sq == RECEIVE.file_target_sq: 
-            # TODO: change the extension based on what we receive
-
+            # Filename and extension based on file type
             if RECEIVE.file_id == 0x0A:
-                RECEIVE.filename = RECEIVE.file_id + "_" + RECEIVE.file_time + ".jpg"
+                RECEIVE.filename = str(file_tags_str[RECEIVE.file_id]) + "_" + str(RECEIVE.file_time) + ".jpg"
             else:
-                RECEIVE.filename = RECEIVE.file_id + "_" + RECEIVE.file_time + ".bin"
+                RECEIVE.filename = str(file_tags_str[RECEIVE.file_id]) + "_" + str(RECEIVE.file_time) + ".bin"
 
             write_bytes = open(RECEIVE.filename, "wb")
 
@@ -42,6 +42,7 @@ class FILETRANSFER:
             write_bytes.close()
 
             RECEIVE.flag_rq_file = False
+            RECEIVE.gs_msg_sq = 0
 
     @classmethod 
     def initiate_file_transfer_sq(self): 
@@ -70,7 +71,7 @@ class FILETRANSFER:
         else:
             # Valid file on satellite
             RECEIVE.flag_rq_file = True
-            return {"id": MSG_ID.GS_CMD_FILE_PKT, "args" : {"file_id": 10, "file_time": int(RECEIVE.file_time), "rq_sq_cnt": RECEIVE.gs_msg_sq}}
+            return {"id": MSG_ID.GS_CMD_FILE_PKT, "args" : {"file_id": RECEIVE.file_id, "file_time": int(RECEIVE.file_time), "rq_sq_cnt": RECEIVE.gs_msg_sq}}
         
 
 
