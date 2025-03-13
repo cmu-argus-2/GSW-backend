@@ -4,6 +4,7 @@ GS Telemetry Unpacker
 import struct
 import datetime
 import time
+import binascii
 
 from lib.telemetry.constants import *
 from lib.telemetry.helpers import *
@@ -475,9 +476,16 @@ class RECEIVE:
         Parsed data in the form of a dictionary (JSON)
         """
 
+
         # get the format and data types for that message
         data_format = DATA_FORMATS[msg_id]
         # print(f"MSG_ID = {msg_id}")
+        if msg_id == MSG_ID.SAT_HEARTBEAT or msg_id == MSG_ID.SAT_TM_NOMINAL:
+            # print(binascii.hexlify(bytearray(msg[4:234])).decode())
+            # print(list(msg[4:234]))
+            # Checking message fields are correct
+            if self.rx_msg_size != 229:
+                print("Message length incorrect")
         msg = msg[4:]
 
         parsed_data = {}
@@ -488,19 +496,24 @@ class RECEIVE:
             parsed_data[subsystem] = {}
 
             # Create struct format string dynamically by computing size and getting the format strings
-            format_string = "="+"".join([field[1] for field in fields])
+            format_string = ">"+"".join([field[1] for field in fields])
             # print(f"{format_string}")
             size = struct.calcsize(format_string)
             # print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
-            unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
+            try: 
+                unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
 
-            # Map unpacked values to field names for each subsystem
-            for i, (field_name, _) in enumerate(fields):
-                parsed_data[subsystem][field_name] = unpacked_values[i]
+                # Map unpacked values to field names for each subsystem
+                for i, (field_name, _) in enumerate(fields):
+                    parsed_data[subsystem][field_name] = unpacked_values[i]
 
-            offset += size  # Move offset forward
+                offset += size  # Move offset forward
+            
+            except struct.error: 
+                print ("\u001b[31m[ERROR] Unsuccessful unpacking of message\u001b[0m")
 
-        # print(parsed_data)
+
+        print(parsed_data)
         return parsed_data
 
 

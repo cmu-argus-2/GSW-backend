@@ -108,7 +108,7 @@ class TRANSMIT:
     def pack_REQUEST_FILE_PKT(self):
         cmd_args = self.rq_cmd["args"]
 
-        file_time = pack_unsigned_long_int(cmd_args, "file_time")
+        file_time = pack_unsigned_long_int([RECEIVE.file_time], 0)
         rq_sq_cnt = pack_unsigned_short_int([RECEIVE.gs_msg_sq], 0)
 
         metadata = (

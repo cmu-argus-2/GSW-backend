@@ -114,8 +114,6 @@ class GS:
                 print("Currently in RX state")
                 print("///////////////////////")
 
-                print("what is going on: rx_msg_id", RECEIVE.rx_msg_id)
-
                 if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
                     FILETRANSFER.receiving_multipkt()
 
@@ -125,7 +123,7 @@ class GS:
                     else:
                         print("**** Received all packets. RX --> DB_RW ****")
 
-                        add_File_Packet(RECEIVE.file_array, RECEIVE.file_id, RECEIVE.filename)
+                        add_File_Packet(RECEIVE.file_array, RECEIVE.file_id)
 
                         self.state = GS_COMMS_STATE.DB_RW
                         self.database_readwrite()    
