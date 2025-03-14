@@ -39,7 +39,7 @@ def size():
 # Sending File commands
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 3, "file_time": int(time.time())}})
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 5, "file_time": int(time.time())}})
-add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
+# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
 
 # Sending TM commands
 add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})

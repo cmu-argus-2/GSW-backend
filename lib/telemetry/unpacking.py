@@ -16,6 +16,14 @@ ADCS_NUM = 31
 GPS_NUM = 21
 STORAGE_NUM = 19
 
+# TM frame sizes as defined in message database
+# TODO: TM HAL
+# TODO: TM PAYLOAD
+_TM_NOMINAL_SIZE    = 227
+_TM_HAL_SIZE        = 46
+_TM_STORAGE_SIZE    = 74
+_TM_PAYLOAD_SIZE    = 0
+
 
 class RECEIVE:
     _msg_id = 0
@@ -60,15 +68,25 @@ class RECEIVE:
         """
 
 
-        # get the format and data types for that message
+        # Get the format and data types for that message
         data_format = DATA_FORMATS[msg_id]
-        # print(f"MSG_ID = {msg_id}")
+
+        # TODO: Header check for all incoming packets
         if msg_id == MSG_ID.SAT_HEARTBEAT or msg_id == MSG_ID.SAT_TM_NOMINAL:
-            # print(binascii.hexlify(bytearray(msg[4:234])).decode())
-            # print(list(msg[4:234]))
-            # Checking message fields are correct
-            if self.rx_msg_size != 229:
+            if self.rx_msg_size != _TM_NOMINAL_SIZE:
                 print("Message length incorrect")
+        
+        elif msg_id == MSG_ID.SAT_TM_HAL:
+            if self.rx_msg_size != _TM_HAL_SIZE:
+                print("Message length incorrect")
+
+        elif msg_id == MSG_ID.SAT_TM_STORAGE:
+            if self.rx_msg_size != _TM_STORAGE_SIZE:
+                print("Message length incorrect")
+        
+        else:
+            pass
+
         msg = msg[4:]
 
         parsed_data = {}
