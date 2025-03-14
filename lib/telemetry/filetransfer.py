@@ -19,10 +19,10 @@ class FILETRANSFER:
 
     @classmethod
     def receiving_multipkt(self): 
-        print (f"Received PKT {RECEIVE.rx_msg_sq} out of {RECEIVE.file_target_sq - 1}")
+        print (f"*** Received PKT {RECEIVE.rx_msg_sq} out of {RECEIVE.file_target_sq - 1} ***")
 
         if RECEIVE.gs_msg_sq != RECEIVE.rx_msg_sq: 
-            print ("ERROR: Sequence count mismatch")
+            print ("\033[31m[COMMS ERROR]: Sequence count mismatch\033[0m")
         else: 
             RECEIVE.file_array.append(RECEIVE.rx_message[9 : RECEIVE.rx_msg_size + 9])
             RECEIVE.gs_msg_sq += 1
@@ -50,9 +50,8 @@ class FILETRANSFER:
 
     @classmethod 
     def initiate_file_transfer_sq(self): 
-        print("SAT_FILE_METADATA requested. Initiating file transfers")
-            # TODO: Better error checking
-        print(f"{RECEIVE.file_size}, {RECEIVE.file_target_sq}")
+        print("*** SAT_FILE_METADATA requested. Initiating file transfers... ***")
+        # TODO: Better error checking
         if (
             RECEIVE.file_id == 0x00
             or RECEIVE.file_size == 0

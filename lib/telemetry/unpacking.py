@@ -74,15 +74,15 @@ class RECEIVE:
         # TODO: Header check for all incoming packets
         if msg_id == MSG_ID.SAT_HEARTBEAT or msg_id == MSG_ID.SAT_TM_NOMINAL:
             if self.rx_msg_size != _TM_NOMINAL_SIZE:
-                print("Message length incorrect")
+                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
         
         elif msg_id == MSG_ID.SAT_TM_HAL:
             if self.rx_msg_size != _TM_HAL_SIZE:
-                print("Message length incorrect")
+                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
 
         elif msg_id == MSG_ID.SAT_TM_STORAGE:
             if self.rx_msg_size != _TM_STORAGE_SIZE:
-                print("Message length incorrect")
+                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
         
         else:
             pass
@@ -91,16 +91,12 @@ class RECEIVE:
 
         parsed_data = {}
         offset = 0  # This is where we start reading from the first byte
-        print(f"MSG Size = {self.rx_msg_size}")
-
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
 
             # Create struct format string dynamically by computing size and getting the format strings
             format_string = ">"+"".join([field[1] for field in fields])
-            # print(f"{format_string}")
             size = struct.calcsize(format_string)
-            # print(f"Offset[{offset}:{offset+size}], SIZE = {size}")
             try: 
                 unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
 
@@ -112,10 +108,10 @@ class RECEIVE:
             
             except struct.error: 
                 # print(struct.error)
-                print ("\u001b[31m[ERROR] Unsuccessful unpacking of message\u001b[0m")
+                print (f"\u001b[31m[COMMS ERROR] Unsuccessful unpacking - struct error. Msg size received: {self.rx_msg_size} \u001b[0m")
 
 
-        print(parsed_data)
+        print("Unpacking parsed data: ", parsed_data)
         return parsed_data
 
 

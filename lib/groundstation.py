@@ -66,32 +66,28 @@ class GS:
     @classmethod
     def database_readwrite(self):
         if self.state == GS_COMMS_STATE.DB_RW:
-            print("////////////////////////")
-            print("Currently in DB_RW state")
-            print("///////////////////////")
+            print("------------------------------")
+            print("Currently in READ_WRITE state")
+            print("------------------------------")
             
             if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
                 TRANSMIT.rq_cmd = FILETRANSFER.initiate_file_transfer_sq()
-                print ("NOW:", TRANSMIT.rq_cmd)
 
             else:
                 # TODO: Check if queue has a valid message ID
                 if commands_available() == None: 
-                    print("CQ is empty")
+                    print("Command Queue is empty")
                     TRANSMIT.rq_cmd = {
                         "id": MSG_ID.GS_CMD_REQUEST_TM_NOMINAL,
                         "args": {},
                     }
                 else:
                     TRANSMIT.rq_cmd = get_latest_command()
-                    print("Latest Command:", TRANSMIT.rq_cmd)
                     remove_latest_command()
-
 
             self.state = GS_COMMS_STATE.TX
 
         else:
-
             self.state = GS_COMMS_STATE.RX
 
     @classmethod
@@ -110,18 +106,17 @@ class GS:
             RECEIVE.unpack_message_header()
 
             if self.state == GS_COMMS_STATE.RX:
-                print("////////////////////////")
-                print("Currently in RX state")
-                print("///////////////////////")
+                print("------------------------------")
+                print("Currently in RECEIVE state")
+                print("------------------------------")
 
                 if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
                     FILETRANSFER.receiving_multipkt()
 
                     if RECEIVE.flag_rq_file is True:
-                        print("**** Received PKT. RX --> TX ****")
                         self.state = GS_COMMS_STATE.TX
                     else:
-                        print("**** Received all packets. RX --> DB_RW ****")
+                        print("\033[32m*** Received all packets ***\033[0m")
 
                         add_File_Packet(RECEIVE.file_array, RECEIVE.file_id)
 
@@ -136,7 +131,7 @@ class GS:
                 
                 else:
                     # Invalid RX message ID
-                    print(f"**** Received invalid msgID {RECEIVE.rx_msg_id} ****")
+                    print(f"\033[31m[COMMS ERROR] Received invalid msgID {RECEIVE.rx_msg_id}\033[0m")
                     self.state = GS_COMMS_STATE.RX
 
             print("\n")
@@ -145,7 +140,7 @@ class GS:
 
         else:
             # No message from SAT
-            print("**** Nothing Received. Stay in RX ****")
+            print("*** Nothing Received. Stay in RX ***")
             print("\n")
             self.state = GS_COMMS_STATE.RX
             return False
@@ -153,9 +148,9 @@ class GS:
     @classmethod
     def transmit(self):
         if self.state == GS_COMMS_STATE.TX:
-            print("////////////////////////")
-            print("Currently in TX state")
-            print("///////////////////////")
+            print("------------------------------")
+            print("Currently in TRANSMIT state")
+            print("------------------------------")
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
@@ -171,15 +166,13 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
 
-            print("Transmitted CMD. TX --> RX")
+            print(f"Transmitted CMD. \033[34mRequesting ID:, {TRANSMIT.rq_cmd}\033[0m")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
         else:
             self.state = GS_COMMS_STATE.RX
-            raise Exception(f"[COMMS ERROR] Not in TX state. In {self.state}")
-
-        print("Requesting ID:", TRANSMIT.rq_cmd, "SQ:", TRANSMIT.rq_sq)
+            raise Exception(f"\033[31m[COMMS ERROR] Not in TX state. In {self.state}\033[0m")
 
 
 
