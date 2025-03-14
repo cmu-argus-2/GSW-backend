@@ -1,9 +1,10 @@
 import os
 
 import psycopg2
-from lib.database.constants import DB_QUERY_STATUS
 from dotenv import load_dotenv
 from flask import Flask, jsonify
+
+from lib.database.constants import DB_QUERY_STATUS
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ DB_CONFIG = {
     "host": os.getenv("PG_HOST"),
     "port": os.getenv("PG_PORT"),
     "dbname": os.getenv("PG_DATABASE"),
-    "connect_timeout": 10, # Set timeout to 5 seconds
+    "connect_timeout": 0,  # Set timeout to 5 seconds
 }
 
 # Connect to Database

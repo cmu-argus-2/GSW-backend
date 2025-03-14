@@ -38,4 +38,4 @@ Are you...
         },
     }
 
-    options[conn_type][reason]()
+    options["r"]["r"]()

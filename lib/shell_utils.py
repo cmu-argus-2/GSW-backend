@@ -46,7 +46,6 @@ def receive_loop():
 
         if msg_rx == True:
             GS.transmit()
-            print("Requesting ID:", GS.rq_cmd, "SQ:", GS.rq_sq)
 
 
 def send_command():
