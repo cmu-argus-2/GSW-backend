@@ -1,3 +1,5 @@
+import time
+
 # Extract the arguments and return the payload
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
@@ -57,7 +59,7 @@ class TRANSMIT:
             )  # packet length
         )
 
-        time_reference = pack_unsigned_long_int(cmd_args, "time_reference")
+        time_reference = pack_unsigned_long_int([int(time.time())], 0)
 
         return metadata + time_reference
 
