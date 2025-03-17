@@ -59,6 +59,7 @@ class TRANSMIT:
             )  # packet length
         )
 
+        # Instead of passing the parameter, calculate time.time() right before TX
         time_reference = pack_unsigned_long_int([int(time.time())], 0)
 
         return metadata + time_reference
