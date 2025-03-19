@@ -103,19 +103,13 @@ class LoRa(object):
         if self._tx_power > 23:
             self._tx_power = 23
 
-        """
         if self._tx_power < 20:
-            self._spi_write(REG_4D_PA_DAC, PA_DAC_ENABLE)
+            self._spi_write(Definitions.REG_4D_PA_DAC, Definitions.PA_DAC_ENABLE)
             self._tx_power -= 3
         else:
-            self._spi_write(REG_4D_PA_DAC, PA_DAC_DISABLE)
+            self._spi_write(Definitions.REG_4D_PA_DAC, Definitions.PA_DAC_DISABLE)
 
-        self._spi_write(REG_09_PA_CONFIG, PA_SELECT | (self._tx_power - 5))
-        """
-        self._spi_write(Definitions.REG_4D_PA_DAC, 0x4)
-        self._spi_write(Definitions.REG_09_PA_CONFIG, 0xFF)
-        # print(self._spi_read(REG_4D_PA_DAC))
-        # print(self._spi_read(REG_09_PA_CONFIG))
+        self._spi_write(Definitions.REG_09_PA_CONFIG, Definitions.PA_SELECT | (self._tx_power - 5))
 
         # CRC Enable
         self.enable_crc = True

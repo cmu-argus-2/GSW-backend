@@ -31,13 +31,13 @@ def size():
 
 # # Sending Ack commands 
 # add_new_command({"id":MSG_ID.GS_CMD_SWITCH_TO_STATE, "args" : {"time_in_state" : 10, "target_state_id" : 1}})
-add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
+# add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
 
 # add_new_command({"id":MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE, "args" : {"time_reference": 1741539508, "position_x": 0, "position_y": 1, "position_z": 3, "velocity_x": 4, "velocity_y": 5, "velocity_z": 6}})
 
 # # Sending File commands
-# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 3, "file_time": int(time.time())}})
-# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 5, "file_time": int(time.time())}})
+# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 4, "file_time": int(time.time())}})
+# add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 7, "file_time": int(time.time())}})
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
 
 # # Sending TM commands
