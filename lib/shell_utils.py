@@ -1,6 +1,7 @@
 import signal
 import socket
 import sys
+import time
 from collections import namedtuple
 from random import randint
 
@@ -25,6 +26,23 @@ def socket_exit(socket, signum, frame):
     sys.exit(0)
 
 
+def transmit_loop():
+    # Test for GS outputs
+    signal.signal(
+        signal.SIGINT,
+        lambda signum, frame: hard_exit(GS.radiohead, None, signum, frame),
+    )
+
+    tx_packet = [1] * 240
+    tx_packet = bytes(tx_packet)
+
+    # Superloop forcing transmissions
+    while True:
+        print("Sending", tx_packet, "\n")
+        GS.transmit_force(tx_packet)
+        time.sleep(1)
+
+
 def receive_loop():
     point_prompt = "Tag for stored data (leave blank for argus-1):"
     point = input(point_prompt) or "argus-1"
@@ -46,6 +64,8 @@ def receive_loop():
 
         if msg_rx == True:
             GS.transmit()
+
+    # transmit_loop()
 
 
 def send_command():

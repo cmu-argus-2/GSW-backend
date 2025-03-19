@@ -174,5 +174,11 @@ class GS:
             self.state = GS_COMMS_STATE.RX
             raise Exception(f"\033[31m[COMMS ERROR] Not in TX state. In {self.state}\033[0m")
 
+    @classmethod
+    def transmit_force(self, packet):
+        GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
+        # header_from and header_to set to 255
+        self.radiohead.send_message(packet, 255, 1)
 
+        GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
