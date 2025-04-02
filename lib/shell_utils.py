@@ -44,8 +44,8 @@ def transmit_loop():
 
 
 def receive_loop():
-    point_prompt = "Tag for stored data (leave blank for argus-1):"
-    point = input(point_prompt) or "argus-1"
+    # point_prompt = "Tag for stored data (leave blank for argus-1):"
+    # point = input(point_prompt) or "argus-1"
     # database = initialize_database("heartbeats", point)
     database = None
 
