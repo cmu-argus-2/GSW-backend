@@ -53,6 +53,8 @@ class RECEIVE:
     gs_msg_sq = 0  # if file is multiple packets - number of packets received
     file_array = []
 
+    crc_error = 0
+
     @classmethod
     def unpack_frame(self, msg_id, msg):
         """

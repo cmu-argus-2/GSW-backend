@@ -1,6 +1,7 @@
-import datetime
 import time
+import datetime
 from collections import deque
+# from lib.argus_lora import LoRa
 
 import RPi.GPIO as GPIO
 
@@ -18,7 +19,7 @@ if config.MODE == "DB":
     from lib.database.db_command_queue import get_latest_command, remove_latest_command, commands_available
     from lib.database.db_rx_data import add_downlink_data, add_File_Packet
 elif config.MODE == "DBG":
-    from lib.database.debug_queue import get_latest_command, remove_latest_command, commands_available
+    from lib.database.debug_queue import get_latest_command, remove_latest_command, commands_available, add_priority_command
     from lib.database.debug_queue import add_downlink_data, add_File_Packet
 
 
@@ -62,6 +63,10 @@ class GS:
     # For packet timing tests
     rx_time = time.monotonic()
 
+    prev_file_id = None
+    prev_file_time = None
+    prev_rq_sq_cnt = None 
+
     # -------------------------- SM functions ------------------------------- #
     @classmethod
     def database_readwrite(self):
@@ -70,7 +75,7 @@ class GS:
             print("Currently in READ_WRITE state")
             print("------------------------------")
             
-            if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_METADATA:
+            if (RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_METADATA or RECEIVE.crc_error):
                 TRANSMIT.rq_cmd = FILETRANSFER.initiate_file_transfer_sq()
 
             else:
@@ -110,6 +115,11 @@ class GS:
                 print("Currently in RECEIVE state")
                 print("------------------------------")
 
+                if (self.radiohead.radio.crc_error()):
+                    RECEIVE.crc_error = 1
+                    # RECEIVE.gs_msg_sq -= 1 if RECEIVE.gs_msg_sq != 0 else 0
+                    print("\033[31m[CRC ERROR] Requesting retransmission of last packet\033[0m")
+
                 if RECEIVE.rx_msg_id == MSG_ID.SAT_FILE_PKT:
                     FILETRANSFER.receiving_multipkt()
 
@@ -117,6 +127,7 @@ class GS:
                         self.state = GS_COMMS_STATE.TX
                     else:
                         print("\033[32m*** Received all packets ***\033[0m")
+                        RECEIVE.crc_error = 0
 
                         add_File_Packet(RECEIVE.file_array, RECEIVE.file_id)
 
@@ -127,8 +138,7 @@ class GS:
                     add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
                     self.state = GS_COMMS_STATE.DB_RW
                     self.database_readwrite()        
-                          
-                
+                            
                 else:
                     # Invalid RX message ID
                     print(f"\033[31m[COMMS ERROR] Received invalid msgID {RECEIVE.rx_msg_id}\033[0m")
@@ -182,3 +192,10 @@ class GS:
         self.radiohead.send_message(packet, 255, 1)
 
         GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
+
+    @classmethod
+    def request_retransmit(self):
+        print("\033[31m[CRC ERROR] Requesting retransmission of last packet\033[0m")
+        TRANSMIT.rq_cmd
+        print (TRANSMIT.rq_cmd)
+        self.state = GS_COMMS_STATE.TX

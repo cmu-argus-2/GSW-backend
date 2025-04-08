@@ -58,6 +58,7 @@ class LoRa(object):
         self.retry_timeout = 0.2
 
         self.crc_error_count = 0
+        self.set_crc_error = 0
 
         # Setup the module
         btn = Button(self._interrupt, pull_up=False)
@@ -112,7 +113,7 @@ class LoRa(object):
         self._spi_write(Definitions.REG_09_PA_CONFIG, Definitions.PA_SELECT | (self._tx_power - 5))
 
         # CRC Enable
-        self.enable_crc = True
+        self.enable_crc = False
 
     def on_recv(self, message):
         # This should be overridden by the user
@@ -280,6 +281,19 @@ class LoRa(object):
     def _handle_interrupt(self, channel):
         irq_flags = self._spi_read(Definitions.REG_12_IRQ_FLAGS)
 
+        # if (
+        #         self._mode == Definitions.MODE_RXCONTINUOUS
+        #         and (irq_flags & Definitions.RX_DONE)
+        #         and (self.crc_error() == 1)
+        #     ):
+        #         self._spi_write(Definitions.REG_12_IRQ_FLAGS, 0xFF)
+
+        #         # ↪ Trigger retransmit on CRC error
+        #         from lib.groundstation import GS
+        #         GS.request_retransmit()
+
+        #         return
+
         if (
             self._mode == Definitions.MODE_RXCONTINUOUS
             and (irq_flags & Definitions.RX_DONE)
@@ -382,14 +396,28 @@ class LoRa(object):
                 self._spi_read(Definitions.REG_1E_MODEM_CONFIG2) & 0xFB,
             )
 
+
     def crc_error(self):
         """crc status. Taken from PyCubed Repo by Max Holliday"""
-        error = (self._spi_read(Definitions.REG_12_IRQ_FLAGS) & 0x20) >> 5
+        import random
+        from lib.groundstation import GS
+        
+        error = 0
+        # *** FORCE A CRC ERROR CONDITION RANDOMLY ***
+        if (GS.state == 0):
+            error = (self._spi_read(Definitions.REG_12_IRQ_FLAGS) & 0x20) >> 5
 
-        if error == 1:
-            print("CRC Error!")
-            self.crc_error_count += 1
-        return error
+            if random.random() < 0.15:
+                error = 1
+
+            if error == 1:
+                print("CRC Error!")
+                self.set_crc_error = 0
+                self.crc_error_count += 1
+            else: 
+                self.set_crc_error = 0
+    
+        return error    
 
     def close(self):
         # GPIO.cleanup()
