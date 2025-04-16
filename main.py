@@ -6,6 +6,7 @@ while True:
     connection_prompt = """
 What operation mode do you want?
 (r) Normal Operation [Downlink and Uplink Functionality]
+(d) Donwlink All Mode
 (t) Only Transmit Operation 
 (q) quit   
 Input: """
@@ -16,7 +17,7 @@ Input: """
     options = {
         "r": receive_loop, 
         "d": downlink_all,
-        "t" : transmit_loop,
+        "t": transmit_loop,
     }
 
     options[conn_type]()
