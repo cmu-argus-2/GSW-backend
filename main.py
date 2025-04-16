@@ -15,6 +15,7 @@ Input: """
 
     options = {
         "r": receive_loop, 
+        "d": downlink_all,
         "t" : transmit_loop,
     }
 

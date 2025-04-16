@@ -1,3 +1,6 @@
+import csv
+import os
+
 from collections import deque
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
@@ -53,11 +56,38 @@ def add_downlink_data(msg_id, rx_message):
     
     unpacked_data = RECEIVE.unpack_frame(msg_id, rx_message)
 
+    if msg_id == MSG_ID.DOWNLINK_ALL_FILES:
+        csv_file = "downlink_log.csv"
+        fieldnames = ["timestamp", "msg_id", "file_id", "file_time", "file_size", "file_target_sq"]
+
+        # Check if file exists to decide whether to write headers
+        file_exists = os.path.isfile(csv_file)
+
+        with open(csv_file, mode="a", newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow({
+                "timestamp": time.time(),
+                "msg_id": msg_id,
+                "file_id": RECEIVE.file_id,
+                "file_time": RECEIVE.file_time,
+                "file_size": RECEIVE.file_size,
+                "file_target_sq": RECEIVE.file_target_sq
+            })
+
+        print ("*** Added to CSV file ***")
+
+
+
     if msg_id == MSG_ID.SAT_FILE_METADATA:
         print(unpacked_data)
         RECEIVE.file_id = unpacked_data["METADATA"]["FILE_ID"]
         RECEIVE.file_time = unpacked_data["METADATA"]["FILE_TIME"]
         RECEIVE.file_size = unpacked_data["METADATA"]["FILE_SIZE"]
         RECEIVE.file_target_sq = unpacked_data["METADATA"]["FILE_TARGET_SQ"]
-
-    print ("*** Added to Mock DB ***")
+        print ("*** Added to Mock DB ***")
+    else:
+        print ("*** Added to Mock DB ***")

@@ -154,6 +154,10 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
+            if TRANSMIT.rq_cmd["id"] == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
+                self.receive_only()
+                return 
+
             if TRANSMIT.rq_cmd["id"] in MSG_ID.VALID_TX_MSG_IDS:
                 TRANSMIT.pack()
             else:
@@ -182,3 +186,35 @@ class GS:
         self.radiohead.send_message(packet, 255, 1)
 
         GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
+
+    @classmethod
+    def receive_only(self):
+        '''
+        Transmit DOWNLINK_ALL_FILES succesfully and then move into receive mode
+        '''
+        # Transmit DOWNLINK_ALL_FILES command 
+        GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
+
+        TRANSMIT.rq_cmd = {
+            "id": MSG_ID.GS_CMD_DOWNLINK_ALL_FILES,
+            "args": {},
+        }
+
+        TRANSMIT.pack()
+        self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
+        print(f"Transmitted CMD. \033[34mRequesting ID:, {TRANSMIT.rq_cmd}\033[0m")
+
+        # Continuous receive loop 
+        GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+        rx_obj = self.radiohead.receive_message()
+
+        if rx_obj is not None:
+            # Message from SAT
+            RECEIVE.rx_message = rx_obj.message
+            print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+            self.rx_time = time.monotonic()
+
+            RECEIVE.unpack_message_header()
+            add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
+
+

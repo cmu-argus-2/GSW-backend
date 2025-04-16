@@ -29,6 +29,9 @@ class MSG_ID:
     SAT_FILE_METADATA = 0x10
     SAT_FILE_PKT = 0x20
 
+    # SAT downlinking all data in its system 
+    DOWNLINK_ALL_FILES = 0x17 # TODO: check number 
+
     """
     GS commands to be uplinked to Argus
     """
@@ -52,6 +55,9 @@ class MSG_ID:
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
 
+    # GS commands SC responds with downlinking everything
+    GS_CMD_DOWNLINK_ALL_FILES = 0x50
+
     VALID_RX_MSG_IDS = [
         SAT_HEARTBEAT, 
         SAT_TM_NOMINAL, 
@@ -60,7 +66,8 @@ class MSG_ID:
         SAT_TM_PAYLOAD, 
         SAT_ACK, 
         SAT_FILE_METADATA, 
-        SAT_FILE_PKT
+        SAT_FILE_PKT,
+        DOWNLINK_ALL_FILES
     ]
 
     VALID_TX_MSG_IDS = [
@@ -75,5 +82,6 @@ class MSG_ID:
         GS_CMD_REQUEST_TM_STORAGE,
         GS_CMD_REQUEST_TM_PAYLOAD,
         GS_CMD_FILE_METADATA,
-        GS_CMD_FILE_PKT
+        GS_CMD_FILE_PKT, 
+        GS_CMD_DOWNLINK_ALL_FILES
     ]
