@@ -1,6 +1,6 @@
 import sys
 
-from lib.shell_utils import (receive_loop, transmit_loop)
+from lib.shell_utils import (receive_loop, transmit_loop, downlink_all)
 
 while True:
     connection_prompt = """
