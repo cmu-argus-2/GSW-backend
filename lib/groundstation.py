@@ -170,7 +170,7 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
 
-            print(f"Transmitted CMD. \033[34mRequesting ID:, {TRANSMIT.rq_cmd}\033[0m")
+            print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
@@ -197,24 +197,27 @@ class GS:
 
         TRANSMIT.rq_cmd = {
             "id": MSG_ID.GS_CMD_DOWNLINK_ALL_FILES,
-            "args": {},
+            "args": {"file_id": 10, "file_time": int(time.time())} ,
         }
 
         TRANSMIT.pack()
         self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
-        print(f"Transmitted CMD. \033[34mRequesting ID:, {TRANSMIT.rq_cmd}\033[0m")
+        print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
+        GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
+
 
         # Continuous receive loop 
-        GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
-        rx_obj = self.radiohead.receive_message()
+        while (True):
+            GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+            rx_obj = self.radiohead.receive_message()
 
-        if rx_obj is not None:
-            # Message from SAT
-            RECEIVE.rx_message = rx_obj.message
-            print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
-            self.rx_time = time.monotonic()
+            if rx_obj is not None:
+                # Message from SAT
+                RECEIVE.rx_message = rx_obj.message
+                print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                self.rx_time = time.monotonic()
 
-            RECEIVE.unpack_message_header()
-            add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
+                RECEIVE.unpack_message_header()
+                add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
 
 

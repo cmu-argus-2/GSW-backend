@@ -4,6 +4,8 @@ import os
 from collections import deque
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
+from lib.telemetry.packing import TRANSMIT
+
 
 import time 
 
@@ -57,6 +59,7 @@ def add_downlink_data(msg_id, rx_message):
     unpacked_data = RECEIVE.unpack_frame(msg_id, rx_message)
 
     if msg_id == MSG_ID.DOWNLINK_ALL_FILES:
+    #if TRANSMIT.rq_cmd == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
         csv_file = "downlink_log.csv"
         fieldnames = ["timestamp", "msg_id", "file_id", "file_time", "file_size", "file_target_sq"]
 

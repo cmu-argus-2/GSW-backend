@@ -6,7 +6,7 @@ while True:
     connection_prompt = """
 What operation mode do you want?
 (r) Normal Operation [Downlink and Uplink Functionality]
-(d) Donwlink All Mode
+(d) Downlink All Mode
 (t) Only Transmit Operation 
 (q) quit   
 Input: """

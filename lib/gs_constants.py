@@ -30,7 +30,7 @@ class MSG_ID:
     SAT_FILE_PKT = 0x20
 
     # SAT downlinking all data in its system 
-    DOWNLINK_ALL_FILES = 0x17 # TODO: check number 
+    DOWNLINK_ALL_FILES = 0x50 # TODO: check number 
 
     """
     GS commands to be uplinked to Argus
@@ -43,7 +43,8 @@ class MSG_ID:
     GS_CMD_UPLINK_ORBIT_REFERENCE = 0x43
     GS_CMD_TURN_OFF_PAYLOAD = 0x44
     GS_CMD_SCHEDULE_OD_EXPERIMENT = 0x45
-    GS_CMD_DOWNLINK_ALL_FILES = 0x4D
+    # GS commands SC responds with downlinking everything
+    GS_CMD_DOWNLINK_ALL_FILES = 0x50 #TODO check what this is 
 
     # GS commands SC responds to with a frame
     GS_CMD_REQUEST_TM_NOMINAL = 0x46
@@ -54,9 +55,6 @@ class MSG_ID:
     # GS commands SC responds to with file MD or packets
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
-
-    # GS commands SC responds with downlinking everything
-    GS_CMD_DOWNLINK_ALL_FILES = 0x50
 
     VALID_RX_MSG_IDS = [
         SAT_HEARTBEAT, 
