@@ -213,6 +213,7 @@ class GS:
             "args": {"file_id": 10, "file_time": int(time.time())} ,
         }
 
+        # Pack CMD
         TRANSMIT.pack()
 
         self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
@@ -227,9 +228,13 @@ class GS:
                 # Message from SAT
                 RECEIVE.rx_message = rx_obj.message
                 print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+
                 self.rx_time = time.monotonic()
 
                 print(RECEIVE.rx_message)
 
                 # Write RECEIVE.rx_message into a .txt file
-
+                f = open('my_file.txt', 'a')
+                f.write(str(RECEIVE.rx_message))
+                f.write("\n\n")
+                f.close()
