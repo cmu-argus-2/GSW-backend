@@ -69,6 +69,8 @@ def receive_loop():
 
 
 def downlink_all():
+    database = None
+
     signal.signal(
         signal.SIGINT,
         lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame),

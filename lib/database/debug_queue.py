@@ -36,7 +36,7 @@ def size():
 
 # # Sending Ack commands 
 # add_new_command({"id":MSG_ID.GS_CMD_SWITCH_TO_STATE, "args" : {"time_in_state" : 10, "target_state_id" : 1}})
-# add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
+add_new_command({"id": MSG_ID.GS_CMD_UPLINK_TIME_REFERENCE, "args" : {"time_reference": int(time.time())}})
 
 # add_new_command({"id":MSG_ID.GS_CMD_UPLINK_ORBIT_REFERENCE, "args" : {"time_reference": 1741539508, "position_x": 0, "position_y": 1, "position_z": 3, "velocity_x": 4, "velocity_y": 5, "velocity_z": 6}})
 
@@ -58,7 +58,7 @@ def add_downlink_data(msg_id, rx_message):
     
     unpacked_data = RECEIVE.unpack_frame(msg_id, rx_message)
 
-    if msg_id == MSG_ID.DOWNLINK_ALL_FILES:
+    if msg_id == MSG_ID.SAT_DOWNLINK_ALL_FILES:
     #if TRANSMIT.rq_cmd == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
         csv_file = "downlink_log.csv"
         fieldnames = ["timestamp", "msg_id", "file_id", "file_time", "file_size", "file_target_sq"]

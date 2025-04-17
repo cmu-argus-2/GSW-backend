@@ -192,19 +192,31 @@ class GS:
         '''
         Transmit DOWNLINK_ALL_FILES succesfully and then move into receive mode
         '''
-        # Transmit DOWNLINK_ALL_FILES command 
-        GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
+        # First, wait to hear anything from the SC
+        while (True):
+            rx_obj = self.radiohead.receive_message()
+
+            if rx_obj is not None:
+                # Message from SAT
+                RECEIVE.rx_message = rx_obj.message
+                print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                self.rx_time = time.monotonic()
+                print(RECEIVE.rx_message)
+
+                # Break out of this loop
+                break
+
+        # Transmit DOWNLINK_ALL to the SC
         TRANSMIT.rq_cmd = {
             "id": MSG_ID.GS_CMD_DOWNLINK_ALL_FILES,
             "args": {"file_id": 10, "file_time": int(time.time())} ,
         }
 
         TRANSMIT.pack()
+
         self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
         print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
-        GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
-
 
         # Continuous receive loop 
         while (True):
@@ -217,7 +229,7 @@ class GS:
                 print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
                 self.rx_time = time.monotonic()
 
-                RECEIVE.unpack_message_header()
-                add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
+                print(RECEIVE.rx_message)
 
+                # Write RECEIVE.rx_message into a .txt file
 
