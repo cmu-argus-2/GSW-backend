@@ -111,7 +111,7 @@ class RECEIVE:
                 print (f"\u001b[31m[COMMS ERROR] Unsuccessful unpacking - struct error. Msg size received: {self.rx_msg_size} \u001b[0m")
 
 
-        # print("Unpacking parsed data: ", parsed_data)
+        print("Unpacking parsed data: ", parsed_data)
         return parsed_data
 
 
