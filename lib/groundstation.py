@@ -8,6 +8,7 @@ import lib.config as config
 
 from lib.gs_constants import MSG_ID
 from lib.radio_utils import initialize_radio
+from lib.telemetry.constants import file_tags_str
 
 from lib.telemetry.packing import TRANSMIT
 from lib.telemetry.unpacking import RECEIVE
@@ -219,22 +220,38 @@ class GS:
         self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
         print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
 
+        file_array_all = []
+        file_id = 0x0A
+        file_time = time.time()
+        filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".jpg"
         # Continuous receive loop 
-        while (True):
-            GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
-            rx_obj = self.radiohead.receive_message()
+        with open(filename, "wb") as write_bytes:
+            while (True):
+                GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+                rx_obj = self.radiohead.receive_message()
 
-            if rx_obj is not None:
-                # Message from SAT
-                RECEIVE.rx_message = rx_obj.message
-                print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                if rx_obj is not None:
+                    # Message from SAT
+                    RECEIVE.rx_message = rx_obj.message
+                    print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
 
-                self.rx_time = time.monotonic()
+                    self.rx_time = time.monotonic()
 
-                print(RECEIVE.rx_message)
+                    # print(RECEIVE.rx_message)
+                    RECEIVE.rx_msg_size = int.from_bytes(RECEIVE.rx_message[5:6], byteorder="big")
 
-                # Write RECEIVE.rx_message into a .txt file
-                f = open('my_file.txt', 'a')
-                f.write(str(RECEIVE.rx_message))
-                f.write("\n\n")
-                f.close()
+                    # Recreating the images and assembling packets 
+                    if (RECEIVE.rx_message[2] == 0x01):
+                        break
+                    else:
+                        write_bytes.write(RECEIVE.rx_message[11 : RECEIVE.rx_msg_size + 9])
+                    
+
+        # write_bytes = open(filename, "wb")
+
+        # for i in range (len(file_array_all)): 
+        #     write_bytes.write(file_array_all[i])
+        
+        # write_bytes.close()
+
+
