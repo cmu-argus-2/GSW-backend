@@ -247,11 +247,5 @@ class GS:
                         write_bytes.write(RECEIVE.rx_message[11 : RECEIVE.rx_msg_size + 9])
                     
 
-        # write_bytes = open(filename, "wb")
-
-        # for i in range (len(file_array_all)): 
-        #     write_bytes.write(file_array_all[i])
-        
-        # write_bytes.close()
 
 
