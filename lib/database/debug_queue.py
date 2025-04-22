@@ -63,9 +63,9 @@ File IDs to tags mapping:
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
 
 # # Sending TM commands
-# add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
-# add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
-# add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
+add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
+add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
+add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
 
 def add_File_Packet(msg_data, file_db_id):
     print ("*** Added file pkt to Mock DB *** ")

@@ -191,6 +191,7 @@ class GS:
     @classmethod
     def receive_only(self):
         '''
+        Debugging mode for the DOWNLINK_ALL command
         Transmit DOWNLINK_ALL_FILES succesfully and then move into receive mode
         '''
 
@@ -208,10 +209,14 @@ class GS:
                 # Break out of this loop
                 break
 
+        # File to be downlinked
+        file_id = 0x04
+        file_time = int(time.time())
+
         # Transmit DOWNLINK_ALL to the SC
         TRANSMIT.rq_cmd = {
             "id": MSG_ID.GS_CMD_DOWNLINK_ALL_FILES,
-            "args": {"file_id": 10, "file_time": int(time.time())} ,
+            "args": {"file_id": file_id, "file_time": file_time},
         }
 
         # Pack CMD
@@ -221,9 +226,12 @@ class GS:
         print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
 
         file_array_all = []
-        file_id = 0x0A
-        file_time = time.time()
-        filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".jpg"
+
+        if file_id == 0x0A:
+            filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".jpg"
+        else:
+            filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".bin"
+
         # Continuous receive loop 
         with open(filename, "wb") as write_bytes:
             while (True):
@@ -245,7 +253,3 @@ class GS:
                         break
                     else:
                         write_bytes.write(RECEIVE.rx_message[11 : RECEIVE.rx_msg_size + 9])
-                    
-
-
-
