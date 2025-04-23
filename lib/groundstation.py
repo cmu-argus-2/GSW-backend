@@ -210,7 +210,7 @@ class GS:
                 break
 
         # File to be downlinked
-        file_id = 0x04
+        file_id = 0x0A
         file_time = int(time.time())
 
         # Transmit DOWNLINK_ALL to the SC
@@ -231,6 +231,8 @@ class GS:
             filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".jpg"
         else:
             filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".bin"
+        
+        sq_cnt = 0
 
         # Continuous receive loop 
         with open(filename, "wb") as write_bytes:
@@ -241,7 +243,8 @@ class GS:
                 if rx_obj is not None:
                     # Message from SAT
                     RECEIVE.rx_message = rx_obj.message
-                    print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                    print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}, SQ CNT {sq_cnt}")
+                    sq_cnt += 1
 
                     self.rx_time = time.monotonic()
 
