@@ -123,6 +123,23 @@ class TRANSMIT:
         )
 
         return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time + rq_sq_cnt
+
+    @classmethod
+    def pack_DOWNLINK_ALL_FILES(self):
+        cmd_args = self.rq_cmd["args"]
+
+        # DOWNLINK_ALL_FILES has the same structure as REQUEST_FILE_METADATA
+        metadata = (
+            MSG_ID.GS_CMD_DOWNLINK_ALL_FILES.to_bytes(1, "big") # message id
+            + (0).to_bytes(2, "big")  # sequence count
+            + MSG_LENGTHS[MSG_ID.GS_CMD_FILE_METADATA].to_bytes( 
+                1, "big"
+            )  # packet length
+        )
+
+        file_time = pack_unsigned_long_int(cmd_args, "file_time")
+
+        return metadata + cmd_args["file_id"].to_bytes(1, "big") + file_time
     
     @classmethod
     def pack(self):
@@ -161,6 +178,11 @@ class TRANSMIT:
             # payload = file_id (uint8) + file_time (uint32) + rq_sq_cnt (uint16)
             md_payload = self.pack_REQUEST_FILE_PKT()
             print("Successfully packed GS_CMD_FILE_PKT")
+
+        elif self.rq_cmd["id"] == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
+            # payload = file_id (uint8) + file_time (uint32)
+            md_payload = self.pack_DOWNLINK_ALL_FILES()
+            print("Successfully packed GS_CMD_DOWNLINK_ALL_FILES")
 
         else:
             # For all other commands that do not have arguments, just pack the command id

@@ -28,6 +28,7 @@ class MSG_ID:
     # SAT file metadata and file content messages
     SAT_FILE_METADATA = 0x10
     SAT_FILE_PKT = 0x20
+    SAT_DOWNLINK_ALL_FILES = 0x24
 
     """
     GS commands to be uplinked to Argus
@@ -40,7 +41,6 @@ class MSG_ID:
     GS_CMD_UPLINK_ORBIT_REFERENCE = 0x43
     GS_CMD_TURN_OFF_PAYLOAD = 0x44
     GS_CMD_SCHEDULE_OD_EXPERIMENT = 0x45
-    GS_CMD_DOWNLINK_ALL_FILES = 0x4D
 
     # GS commands SC responds to with a frame
     GS_CMD_REQUEST_TM_NOMINAL = 0x46
@@ -51,6 +51,7 @@ class MSG_ID:
     # GS commands SC responds to with file MD or packets
     GS_CMD_FILE_METADATA = 0x4A
     GS_CMD_FILE_PKT = 0x4B
+    GS_CMD_DOWNLINK_ALL_FILES = 0x50
 
     VALID_RX_MSG_IDS = [
         SAT_HEARTBEAT, 
@@ -60,7 +61,8 @@ class MSG_ID:
         SAT_TM_PAYLOAD, 
         SAT_ACK, 
         SAT_FILE_METADATA, 
-        SAT_FILE_PKT
+        SAT_FILE_PKT,
+        SAT_DOWNLINK_ALL_FILES,
     ]
 
     VALID_TX_MSG_IDS = [
@@ -69,11 +71,11 @@ class MSG_ID:
         GS_CMD_UPLINK_TIME_REFERENCE,
         GS_CMD_TURN_OFF_PAYLOAD,
         GS_CMD_SCHEDULE_OD_EXPERIMENT,
-        GS_CMD_DOWNLINK_ALL_FILES,
         GS_CMD_REQUEST_TM_NOMINAL,
         GS_CMD_REQUEST_TM_HAL,
         GS_CMD_REQUEST_TM_STORAGE,
         GS_CMD_REQUEST_TM_PAYLOAD,
         GS_CMD_FILE_METADATA,
-        GS_CMD_FILE_PKT
+        GS_CMD_FILE_PKT, 
+        GS_CMD_DOWNLINK_ALL_FILES,
     ]

@@ -8,6 +8,7 @@ import lib.config as config
 
 from lib.gs_constants import MSG_ID
 from lib.radio_utils import initialize_radio
+from lib.telemetry.constants import file_tags_str
 
 from lib.telemetry.packing import TRANSMIT
 from lib.telemetry.unpacking import RECEIVE
@@ -154,6 +155,10 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
+            if TRANSMIT.rq_cmd["id"] == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
+                self.receive_only()
+                return 
+
             if TRANSMIT.rq_cmd["id"] in MSG_ID.VALID_TX_MSG_IDS:
                 TRANSMIT.pack()
             else:
@@ -166,7 +171,7 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
 
-            print(f"Transmitted CMD. \033[34mRequesting ID:, {TRANSMIT.rq_cmd}\033[0m")
+            print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
@@ -182,3 +187,72 @@ class GS:
         self.radiohead.send_message(packet, 255, 1)
 
         GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
+
+    @classmethod
+    def receive_only(self):
+        '''
+        Debugging mode for the DOWNLINK_ALL command
+        Transmit DOWNLINK_ALL_FILES succesfully and then move into receive mode
+        '''
+
+        # First, wait to hear anything from the SC
+        while (True):
+            rx_obj = self.radiohead.receive_message()
+
+            if rx_obj is not None:
+                # Message from SAT
+                RECEIVE.rx_message = rx_obj.message
+                print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                self.rx_time = time.monotonic()
+                print(RECEIVE.rx_message)
+
+                # Break out of this loop
+                break
+
+        # File to be downlinked
+        file_id = 0x0A
+        file_time = int(time.time())
+
+        # Transmit DOWNLINK_ALL to the SC
+        TRANSMIT.rq_cmd = {
+            "id": MSG_ID.GS_CMD_DOWNLINK_ALL_FILES,
+            "args": {"file_id": file_id, "file_time": file_time},
+        }
+
+        # Pack CMD
+        TRANSMIT.pack()
+
+        self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
+        print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
+
+        file_array_all = []
+
+        if file_id == 0x0A:
+            filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".jpg"
+        else:
+            filename = str(file_tags_str[file_id]) + "_" + str(int(file_time)) + ".bin"
+        
+        sq_cnt = 0
+
+        # Continuous receive loop 
+        with open(filename, "wb") as write_bytes:
+            while (True):
+                GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+                rx_obj = self.radiohead.receive_message()
+
+                if rx_obj is not None:
+                    # Message from SAT
+                    RECEIVE.rx_message = rx_obj.message
+                    print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}, SQ CNT {sq_cnt}")
+                    sq_cnt += 1
+
+                    self.rx_time = time.monotonic()
+
+                    # print(RECEIVE.rx_message)
+                    RECEIVE.rx_msg_size = int.from_bytes(RECEIVE.rx_message[5:6], byteorder="big")
+
+                    # Recreating the images and assembling packets 
+                    if (RECEIVE.rx_message[2] == 0x01):
+                        break
+                    else:
+                        write_bytes.write(RECEIVE.rx_message[11 : RECEIVE.rx_msg_size + 9])

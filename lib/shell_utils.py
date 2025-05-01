@@ -68,6 +68,20 @@ def receive_loop():
     # transmit_loop()
 
 
+def downlink_all():
+    database = None
+
+    signal.signal(
+        signal.SIGINT,
+        lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame),
+    )
+
+    # Superloop for SAT comms, all logic handled in groundstation class
+    while True:
+        print("Waiting for packet...")
+        msg_rx = GS.receive_only()
+
+
 def send_command():
     pass
 
