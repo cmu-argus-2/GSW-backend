@@ -189,6 +189,29 @@ class GS:
         GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
     @classmethod
+    def tx_rx_loop(self):
+        # First, wait to hear anything from the SC
+        while (True):
+            rx_obj = self.radiohead.receive_message()
+
+            if rx_obj is not None:
+                # Message from SAT
+                RECEIVE.rx_message = rx_obj.message
+                print(f"Msg RSSI: {rx_obj.rssi} at {time.monotonic() - self.rx_time}")
+                self.rx_time = time.monotonic()
+                print(RECEIVE.rx_message)
+
+                # Break out of this loop
+                break
+
+        # Transmit random message to SC
+        tx_packet = [1] * 8
+        tx_packet = bytes(tx_packet)
+
+        # header_from and header_to set to 255
+        self.radiohead.send_message(tx_packet, 255, 1)
+
+    @classmethod
     def receive_only(self):
         '''
         Debugging mode for the DOWNLINK_ALL command

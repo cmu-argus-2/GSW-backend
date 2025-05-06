@@ -79,7 +79,7 @@ def downlink_all():
     # Superloop for SAT comms, all logic handled in groundstation class
     while True:
         print("Waiting for packet...")
-        msg_rx = GS.receive_only()
+        msg_rx = GS.tx_rx_loop()
 
 
 def send_command():
