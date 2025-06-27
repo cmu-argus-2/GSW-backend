@@ -27,5 +27,6 @@ def initialize_radio() -> RadioHead:
     )
 
     # RadioHead wrapper class that overwrites on_recv and adds a receive method
-    radiohead = RadioHead(radio, 15)
+    # receive_timeout in RadioHead set to 30s
+    radiohead = RadioHead(radio, 30)
     return radiohead
