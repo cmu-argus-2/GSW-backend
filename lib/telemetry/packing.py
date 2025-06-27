@@ -22,6 +22,9 @@ class TRANSMIT:
     rq_len = 0  # error checking
     tx_message = []
 
+    # Destination ID for GS TX
+    tx_dst_id = 0x00
+
     # TODO: fix comments
     @classmethod
     def pack_SWITCH_TO_STATE(self):
@@ -146,9 +149,8 @@ class TRANSMIT:
         """
         This will pack and return the tx_message
         """
-        # TODO: print statements for which message was packed
-        # pack source and destination headers
-        src_dst_header = bytes([MSG_ID.GS_ID, MSG_ID.ARGUS_1_ID])
+        # Source and destination IDs for the message
+        src_dst_header = bytes([MSG_ID.GS_ID, self.tx_dst_id])
 
         # pack the metadata + payload
         md_payload = ()
