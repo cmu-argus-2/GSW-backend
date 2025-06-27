@@ -196,8 +196,8 @@ class GS:
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-            # TODO: Update TRANSMIT.tx_dst_id based on active SAT in ground pass
-            
+            # Update TRANSMIT.tx_dst_id based on active SAT in ground pass
+            TRANSMIT.tx_dst_id = self.active_sat
 
             # SPECIAL CASE for downlink all file execution
             # TODO: Check if this actually works
