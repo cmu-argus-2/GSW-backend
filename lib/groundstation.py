@@ -147,6 +147,33 @@ class GS:
             return False
 
     @classmethod
+    def simple_receive(self):
+        """
+        This function will be used in echo loop mode
+        the idea is that it will simply receive the message and return the packet
+        """
+        
+        GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
+        print("Rx mode has been turned on")
+        # Receive message from radiohead
+        rx_obj = self.radiohead.receive_message()
+        
+        if rx_obj is None:
+            print("No message received \n")
+            GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
+            print("Rx mode has been turned off \n")
+            return None
+        
+        print(f"Message received: {rx_obj.message}")
+        # print rssi and snr
+        print(f"  Msg RSSI: {rx_obj.rssi}")
+        print(f"  Msg SNR: {rx_obj.snr}")
+        
+        GPIO.output(self.rx_ctrl, GPIO.LOW)  # Turn RX off
+        print("Rx mode has been turned off \n")
+        return rx_obj
+        
+    @classmethod
     def transmit(self):
         if self.state == GS_COMMS_STATE.TX:
             print("------------------------------")
