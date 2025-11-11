@@ -1,3 +1,4 @@
+
 import signal
 import socket
 import sys
@@ -41,6 +42,34 @@ def transmit_loop():
         print("Sending", tx_packet, "\n")
         GS.transmit_force(tx_packet)
         time.sleep(1)
+        
+def echo_loop():
+    """
+    Simple mode to test the satellite and help develop it
+    It will ask the user for a message. It will proceed to send that message to the satellite
+    and wait for a response. Once a response is received, it will print to the console
+    After a time it will send the message again
+    """
+    signal.signal(
+        signal.SIGINT,
+        lambda signum, frame: hard_exit(GS.radiohead, None, signum, frame),
+    )
+
+    user_msg = input("Enter message to send to satellite: ")
+    tx_packet = user_msg.encode('utf-8')
+
+    while True:
+
+        print("Sending", tx_packet, "\n")
+        GS.transmit_force(tx_packet)        
+
+        print("Waiting for packet...")
+        msg_rx = GS.simple_receive()
+        if msg_rx is not None:
+            print("Received response from satellite:")
+        
+        time.sleep(1)
+            
 
 
 def receive_loop():
