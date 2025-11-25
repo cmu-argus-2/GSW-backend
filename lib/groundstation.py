@@ -57,8 +57,14 @@ class GS:
     GPIO.output(rx_ctrl, GPIO.LOW)
     GPIO.output(tx_ctrl, GPIO.LOW)
 
-    # State ground station
+    # Initial GS state
     state = GS_COMMS_STATE.RX
+
+    # Currently in ground pass or not
+    ground_pass = False
+
+    # Currently active satellite (current ground pass)
+    active_sat = MSG_ID.ARGUS_1_ID
 
     # For packet timing tests
     rx_time = time.monotonic()
@@ -95,8 +101,15 @@ class GS:
     def receive(self):
         GPIO.output(self.rx_ctrl, GPIO.HIGH)  # Turn RX on
         print("\n")
+
         # Receive message from radiohead
         rx_obj = self.radiohead.receive_message()
+
+        """
+        To distinguish between Argus 1 and 2, the [src, dst]
+        header is used. This should be set and cleared based
+        on which satellite is actively in a ground pass.
+        """
 
         if rx_obj is not None:
             # Message from SAT
@@ -105,6 +118,27 @@ class GS:
             self.rx_time = time.monotonic()
 
             RECEIVE.unpack_message_header()
+
+            # Check RECEIVE.rx_src_id to see which satellite sent msg
+            if ground_pass:
+
+                # If already in a ground pass, only RX from active SAT
+                if RECEIVE.rx_src_id == self.active_sat:
+                    # Talking to active SAT, continue
+                    pass
+
+                # Else, ignore the message, as it is from inactive SAT
+                else:
+                    return False
+
+            else:
+                # Start of a new ground pass
+
+                # Update active SAT to be the one we just heard from
+                self.active_sat = RECEIVE.rx_src_id
+
+                # Update ground pass variable to be True
+                ground_pass = True
 
             if self.state == GS_COMMS_STATE.RX:
                 print("------------------------------")
@@ -143,7 +177,13 @@ class GS:
             # No message from SAT
             print("*** Nothing Received. Stay in RX ***")
             print("\n")
+
+            # Current ground pass has ended due to timeout in RX
+            ground_pass = False
+
+            # Stay in RX state waiting for packets
             self.state = GS_COMMS_STATE.RX
+
             return False
 
     @classmethod
@@ -152,15 +192,25 @@ class GS:
             print("------------------------------")
             print("Currently in TRANSMIT state")
             print("------------------------------")
+
             # Transmit message through radiohead
             GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
+            # Update TRANSMIT.tx_dst_id based on active SAT in ground pass
+            TRANSMIT.tx_dst_id = self.active_sat
+
+            # SPECIAL CASE for downlink all file execution
+            # TODO: Check if this actually works
             if TRANSMIT.rq_cmd["id"] == MSG_ID.GS_CMD_DOWNLINK_ALL_FILES:
                 self.receive_only()
                 return 
 
+            # Nominal message TX cases
             if TRANSMIT.rq_cmd["id"] in MSG_ID.VALID_TX_MSG_IDS:
                 TRANSMIT.pack()
+
+            # If somehow requesting an invalid msg ID, assume failure on backend
+            # Instead just request heartbeat from Argus
             else:
                 # Set RQ message parameters for HB request
                 TRANSMIT.rq_cmd = {"id": MSG_ID.GS_CMD_REQUEST_TM_NOMINAL, "args": {}}
@@ -179,6 +229,12 @@ class GS:
             self.state = GS_COMMS_STATE.RX
             raise Exception(f"\033[31m[COMMS ERROR] Not in TX state. In {self.state}\033[0m")
 
+    """
+    TEST FUNCTIONS
+    ##############
+
+    Only use these for testing, not nominal operation
+    """
     @classmethod
     def transmit_force(self, packet):
         GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
