@@ -66,6 +66,10 @@ class LoRa(object):
         self.spi = spidev.SpiDev()
         self.spi.open(0, self._channel)
         self.spi.max_speed_hz = 5000000
+        
+        # try and read the version register to see if everything is okay
+        version = self._spi_read(Definitions.REG_42_VERSION)
+        assert version == 0x12, f"RFM98P not found or not responding correctly, version read: 0x{version:02X}"
 
         self._spi_write(
             Definitions.REG_01_OP_MODE,

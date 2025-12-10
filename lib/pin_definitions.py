@@ -30,6 +30,8 @@ class Definitions:
     REG_21_PREAMBLE_LSB = 0x21
     REG_22_PAYLOAD_LENGTH = 0x22
     REG_26_MODEM_CONFIG3 = 0x26
+    
+    REG_42_VERSION = 0x42
 
     REG_4D_PA_DAC = 0x4D
     REG_40_DIO_MAPPING1 = 0x40
