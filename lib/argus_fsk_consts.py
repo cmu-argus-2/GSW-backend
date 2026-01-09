@@ -1,0 +1,103 @@
+# Internal constants:
+# Register names (FSK Mode) from table 85
+
+_FIFO = 0x00
+_OP_MODE = 0x01
+_BITRATE_MSB = 0x02
+_BITRATE_LSB = 0x03
+_FDEV_MSB = 0x4
+_FDEV_LSB = 0x5
+_FRF_MSB = 0x06
+_FRF_MID = 0x07
+_FRF_LSB = 0x08
+_PA_CONFIG = 0x09
+_PA_RAMP = 0x0A
+_OCP = 0x0B
+_LNA = 0x0C
+_RX_CFG = 0x0D
+_RSSI_CFG = 0x0E
+_RSSI_COLLISION = 0x0F
+_RSSI_THRESH = 0x10
+_RSSI_VALUE = 0x11
+_RX_BW = 0x12
+_AFC_BW = 0x13
+_OOK_PEAK = 0x14
+_OOK_FIX = 0x15
+_OOK_AVG = 0x16
+_AFC_FEI_CTL = 0x1A
+_AFC_MSB = 0x1B
+_AFC_LSB = 0x1C
+_FEI_MSB = 0x1D
+_FEI_LSB = 0x1E
+_PREAMBLE_DETECT = 0x1F
+_RX_TIMEOUT_1 = 0x20
+_RX_TIMEOUT_2 = 0x21
+_RX_TIMEOUT_3 = 0x22
+_RX_DELAY = 0x23
+_OSC = 0x24
+_PREAMBLE_MSB = 0x25
+_PREAMBLE_LSB = 0x26
+_SYNC_CONFIG = 0x27
+_SYNC_VALUE_1 = 0x28
+_SYNC_VALUE_2 = 0x29
+_SYNC_VALUE_3 = 0x2A
+_SYNC_VALUE_4 = 0x2B
+_SYNC_VALUE_5 = 0x2C
+_SYNC_VALUE_6 = 0x2D
+_SYNC_VALUE_7 = 0x2E
+_SYNC_VALUE_8 = 0x2F
+_PACKET_CONFIG_1 = 0x30
+_PACKET_CONFIG_2 = 0x31
+_PAYLOAD_LENGTH = 0x32
+_NODE_ADDR = 0x33
+_BROADCAST_ADDR = 0x34
+_FIFO_THRESH = 0x35
+_SEQ_CFG_1 = 0x36
+_SEQ_CFG_2 = 0x37
+_TIMER_RES = 0x38
+_TIMER1_COEF = 0x39
+_TIMER2_COEF = 0x3A
+_IMAGE_CAL = 0x3B
+_TEMP = 0x3C
+_LOW_BAT = 0x3D
+_IRQ_FLAGS_1 = 0x3E
+_IRQ_FLAGS_2 = 0x3F
+
+_DIO_MAPPING1 = 0x40
+_DIO_MAPPING2 = 0x41
+_VERSION = 0x42
+
+_PIII_IOP = 0x44
+
+_TCXO = 0x4B
+_PA_DAC = 0x4D
+_FORMER_TEMP = 0x5B
+_BIT_RATE_FRAC = 0x5D
+_AGC_REF = 0x61
+_AGC_THRESH1 = 0x62
+_AGC_THRESH2 = 0x63
+_AGC_THRESH3 = 0x64
+
+
+_PA_DAC_DISABLE = 0x04
+_PA_DAC_ENABLE = 0x07
+
+
+# The crystal oscillator frequency of the module
+FXOSC = 32000000.0
+# The Frequency Synthesizer step = RH_RF95_FXOSC / 2^^19
+FSTEP = FXOSC / 524288
+
+# The acknowledgement bit in the FLAGS
+# The top 4 bits of the flags are reserved for RadioHead. The lower 4 bits are reserved
+# for application layer use.
+_RH_FLAGS_ACK = 0x80
+_RH_FLAGS_RETRY = 0x40
+    
+# User facing constants:
+SLEEP_MODE = 0b000
+STANDBY_MODE = 0b001
+FS_TX_MODE = 0b010
+TX_MODE = 0b011
+FS_RX_MODE = 0b100
+RX_MODE = 0b101
