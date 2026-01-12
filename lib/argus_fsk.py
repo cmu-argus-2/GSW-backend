@@ -59,6 +59,7 @@ class RFM9xFSK(RFMSPI):
     long_range_mode = RFMSPI.RegisterBits(CONST._OP_MODE, offset=7, bits=1)
     sync_on = RFMSPI.RegisterBits(CONST._SYNC_CONFIG, offset=4, bits=1)
     sync_size = RFMSPI.RegisterBits(CONST._SYNC_CONFIG, offset=0, bits=3)
+    preamble_polarity = RFMSPI.RegisterBits(CONST._SYNC_CONFIG, offset=5, bits=1)
     output_power = RFMSPI.RegisterBits(CONST._PA_CONFIG, bits=4)
     max_power = RFMSPI.RegisterBits(CONST._PA_CONFIG, offset=4, bits=3)
     pa_select = RFMSPI.RegisterBits(CONST._PA_CONFIG, offset=7, bits=1)
@@ -75,7 +76,10 @@ class RFM9xFSK(RFMSPI):
     crc_auto_clear_off = RFMSPI.RegisterBits(CONST._PACKET_CONFIG_1, offset=3, bits=1)
     address_filter = RFMSPI.RegisterBits(CONST._PACKET_CONFIG_1, offset=1, bits=2)
     crc_type = RFMSPI.RegisterBits(CONST._PACKET_CONFIG_1, offset=0, bits=1)
-
+    
+    agc = RFMSPI.RegisterBits(CONST._RX_CFG, offset=3, bits=1)
+    afc_auto_on = RFMSPI.RegisterBits(CONST._RX_CFG, offset=4, bits=1)
+    
     data_mode = RFMSPI.RegisterBits(CONST._PACKET_CONFIG_2, offset=6, bits=1)
     payload_length = RFMSPI.RegisterBits(CONST._PACKET_CONFIG_2,  bits=8)    # this is going  over two registers, not sure if this will work
     
@@ -86,7 +90,6 @@ class RFM9xFSK(RFMSPI):
     ook_peak_thresh_dec = RFMSPI.RegisterBits(CONST._OOK_AVG, offset=5, bits=3)
     ook_average_offset = RFMSPI.RegisterBits(CONST._OOK_AVG, offset=2, bits=2)
     ook_average_thresh_filt = RFMSPI.RegisterBits(CONST._OOK_AVG, offset=0, bits=2)
-    afc_auto_on = RFMSPI.RegisterBits(CONST._RX_CFG, offset=4, bits=1)
 
     def __init__(  # noqa: PLR0913
         self,
@@ -94,7 +97,7 @@ class RFM9xFSK(RFMSPI):
     ) -> None:
         super().__init__() # here I should pass the stuff for  spi communication, but for now I will have this hardcoded on the layer below
         self.module = "RFM9X"
-        self.high_power = config_dict.get("high_power", True)
+        self.high_power = int(config_dict.get("high_power", True))
         self.max_packet_length = config_dict.get("max_packet_length", 100)
         
         # No device type check!  Catch an error from the very first request and
@@ -120,6 +123,13 @@ class RFM9xFSK(RFMSPI):
             
         # turn on afc
         self.afc_auto_on = config_dict.get("afc_auto", 1)
+        
+        # turn on agc
+        self.agc = 1
+        
+        # change preamble polarity to 0x55
+        self.preamble_polarity = 1  # 0x55
+        
         
         # set packet mode
         self.data_mode = config_dict.get("data_mode", 0)  # packet mode
@@ -193,6 +203,7 @@ class RFM9xFSK(RFMSPI):
         """
         # Handle when sync word is disabled..
         if not self.sync_on:
+            print("Setting sync word, but sync is disabled")
             return None
         # Sync word is not disabled so read the current value.
         sync_word_length = self.sync_size + 1  # Sync word size is offset by 1
@@ -204,7 +215,9 @@ class RFM9xFSK(RFMSPI):
     @sync_word.setter
     def sync_word(self, val: Optional[bytearray]) -> None:
         # Handle disabling sync word when None value is set.
+        print("Writing val: ", val)
         if val is None:
+            print("sync word is none, disabling")
             self.sync_on = 0
         else:
             # Check sync word is at most 8 bytes.
@@ -417,20 +430,26 @@ class RFM9xFSK(RFMSPI):
                 val -= 3
             else:
                 self.pa_dac = CONST._PA_DAC_DISABLE
-            self.pa_select = True
+            self.pa_select = int(True)
             self.output_power = (val - 5) & 0x0F
         else:
             assert -1 <= val <= 14
-            self.pa_select = False
+            self.pa_select = int(False)
             self.max_power = 0b111  # Allow max power output.
             self.output_power = (val + 1) & 0x0F
 
     @property
     def rssi(self) -> float:
-        """The received strength indicator (in dBm) of the last received message."""
+        """
+        The received strength indicator (in dBm)
+        not clear if it is instant or if it of the last received message
+        it should be constant, but from testing it seems to be from the last received message
+        seeing as it only changes when it receives a message (messages we have been received is noise)
+        """
         # Read RSSI register and convert to value using formula in datasheet.
         # Remember in LoRa mode the payload register changes function to RSSI!
-        raw_rssi = self.read_u8(CONST._RSSI_VALUE)
+        raw_rssi = self.read_u8(CONST._RSSI_VALUE)   # this seems to be the value for the last received packet
+        
         return -raw_rssi / 2.0
 
     @property

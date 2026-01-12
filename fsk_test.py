@@ -5,32 +5,11 @@ import time
 
 from lib.argus_fsk import RFM9xFSK
 
-
-
-config_dict = {
-    "frequency": 433.707+0.0096,
-    "high_power": True,
-    "power": 20,
-    
-    "afc_auto": 0,
-    "data_mode": 0,  # packet mode
-    "packet_format": 1,  # variable length
-    "max_packet_length": 200,
-    
-    "bt": 0.0,
-    "rx_bw": 15000,
-    "bit_rate": 4000,
-    "fdev": 1000,
-    
-    "sync_word": b"\x69\x96",
-    "preamble_length": 100,
-    
-    "crc": False,
-    "whitening": 00 # 01 manchester, 10 whitening, 00 none
-}
+from radio_config import config_dict
 
 # lets start testing the new fsk class
 fsk_radio = RFM9xFSK(config_dict)
+fsk_radio.modulation_type = 0  # FSK
 
 
 transmit_interval = 10
@@ -39,9 +18,16 @@ transmit_interval = 10
 # initialize counter
 counter = 0
 # send a broadcast mesage
-time.sleep(5)
 print("Sending initial message")
-fsk_radio.send(bytes(f"message number {counter}", "UTF-8"))
+while True:
+    
+    fsk_radio.send(bytes(f"message number {counter}", "UTF-8"))
+
+    #print regop
+    op_mode = fsk_radio.read_u8(0x01)
+    print(f"Operation Mode Register (bits): {op_mode:08b}")
+    time.sleep(5)
+    
 # Wait to receive packets.
 print("Waiting for packets...")
 # initialize flag and timer

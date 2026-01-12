@@ -142,7 +142,7 @@ class RFMSPI:
         self.flags = 0
         """Upper 4 bits reserved for Reliable Datagram Mode"""
         
-        self.radiohead = True
+        self.radiohead = False
         """Enable RadioHead compatibility"""
         
         self.crc_error_count = 0
@@ -221,14 +221,24 @@ class RFMSPI:
         self.fill_fifo(payload)
         self.transmit()
         
+        # print regop
+        op_mode = self.read_u8(0x01)
+        print(f"Operation Mode Register (bits): {op_mode:08b}")
+        print("This is packet sent before wait: ", self.packet_sent())
+    
+    
         # Wait for packet_sent interrupt
         timed_out = await asyncio_check_timeout(
             self.packet_sent, self.xmit_timeout, self.timeout_poll
         )
         
+        print("This is packet sent: ", self.packet_sent())
+                
         if keep_listening:
+            print("Listening after send")
             self.listen()
         else:
+            print("Going back to idle")
             self.idle()
         
         self.clear_interrupt()
