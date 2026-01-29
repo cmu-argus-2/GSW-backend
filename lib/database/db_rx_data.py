@@ -4,6 +4,9 @@ from lib.database.db_server import query
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
 
+from lib.database.ingest_gateway import Ingest
+MyIngest = Ingest(host="172.20.70.48", port=5555, timeout=5.0, retries=3)
+
 
 def handle_command_ACK(ack):
     """If SC sends an ack for a command, we need to handle successful and failed executions of commands.
@@ -129,4 +132,17 @@ def add_downlink_data(msg_id, rx_message):
     #Insert ACK into db
     elif msg_id == MSG_ID.SAT_ACK:
         add_Ack()
+        
+def add_gs_database(msg_id, rx_message):
+    """
+    New simple version to add the data to the gs_database
+    
+    this is a work in progress
+    """
+    
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
+        print("Sending telemetry packet to gs_database")
+        # want to send the data to the ingest program
+        MyIngest.send(RECEIVE.unpack_frame(msg_id, rx_message))
+        
 

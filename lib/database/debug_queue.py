@@ -7,6 +7,11 @@ from lib.telemetry.unpacking import RECEIVE
 from lib.telemetry.packing import TRANSMIT
 
 
+from lib.database.ingest_gateway import Ingest
+MyIngest = Ingest(host="172.20.70.48", port=5555, timeout=5.0, retries=3)
+
+
+
 import time 
 
 # Global FIFO Queue
@@ -111,3 +116,22 @@ def add_downlink_data(msg_id, rx_message):
         print ("*** Added to Mock DB ***")
     else:
         print ("*** Added to Mock DB ***")
+        
+        
+        
+def add_gs_database(msg_id, rx_message):
+    """
+    New simple version to add the data to the gs_database
+    
+    this is a work in progress
+    """
+    
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
+        print("Sending telemetry packet to gs_database")
+        # want to send the data to the ingest program
+        print("Adding to gs database: ", RECEIVE.unpack_frame(msg_id, rx_message))
+        MyIngest.send(RECEIVE.unpack_frame(msg_id, rx_message))
+        
+
+
+
