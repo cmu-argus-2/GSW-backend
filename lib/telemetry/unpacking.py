@@ -1,137 +1,203 @@
 """
-GS Telemetry Unpacker
+Telemetry Unpacker for Ground Station (Standard Python)
+
+Unpacks telemetry data according to telemetry_config.py definitions
 """
+
 import struct
 import datetime
-import time
-import binascii
 
-from lib.telemetry.constants import *
-from lib.telemetry.helpers import *
+# Import telemetry configuration and helpers
+from lib.telemetry.telemetry_config import (
+    HEARTBEAT_NOMINAL_FORMAT,
+    TM_STORAGE_FORMAT,
+    TM_HAL_FORMAT,
+    FORMAT_FIXED_POINT_HP,
+    FORMAT_FIXED_POINT_LP,
+    MSG_ID_SAT_HEARTBEAT,
+    MSG_ID_SAT_TM_HAL,
+    MSG_ID_SAT_TM_STORAGE,
+    MSG_ID_SAT_TM_NOMINAL,
+    get_format_size,
+    # Conversion helpers
+    convert_fixed_point_to_float_hp,
+    convert_fixed_point_to_float_lp,
+)
 
-# Const IDX numbers
-CDH_NUM = 8
-EPS_NUM = 43
-ADCS_NUM = 31
-GPS_NUM = 21
-STORAGE_NUM = 19
-
-# TM frame sizes as defined in message database
-# TODO: TM HAL
-# TODO: TM PAYLOAD
-_TM_NOMINAL_SIZE    = 227
-_TM_HAL_SIZE        = 46
-_TM_STORAGE_SIZE    = 74
-_TM_PAYLOAD_SIZE    = 0
+TM_NOMINAL_SIZE = 211
+TM_HAL_SIZE = 46
+TM_STORAGE_SIZE = 74
+TM_PAYLOAD_SIZE = 0
 
 
-class RECEIVE:
-    _msg_id = 0
-    _seq_cnt = 0
-    _size = 0
+
+class TelemetryUnpacker:
+    """
+    Unpacks telemetry data from satellite using format definitions from telemetry_config.py
+    """
+
+    # Message ID to format mapping
+    _FORMAT_MAP = {
+        MSG_ID_SAT_HEARTBEAT: HEARTBEAT_NOMINAL_FORMAT,
+        MSG_ID_SAT_TM_NOMINAL: HEARTBEAT_NOMINAL_FORMAT,
+        MSG_ID_SAT_TM_HAL: TM_HAL_FORMAT,
+        MSG_ID_SAT_TM_STORAGE: TM_STORAGE_FORMAT,
+    }
+
+    # Message ID to expected size mapping
+    _SIZE_MAP = {
+        MSG_ID_SAT_HEARTBEAT: TM_NOMINAL_SIZE,
+        MSG_ID_SAT_TM_NOMINAL: TM_NOMINAL_SIZE,
+        MSG_ID_SAT_TM_HAL: TM_HAL_SIZE,
+        MSG_ID_SAT_TM_STORAGE: TM_STORAGE_SIZE,
+    }
 
     # Source header parameters
     rx_src_id = 0x00
     rx_dst_id = 0x00
 
     # RX message parameters
-    # received msg parameters
     rx_msg_id = 0x00
     rx_msg_sq = 0
     rx_msg_size = 0
     rx_message = []
 
     # File metadata parameters
-    file_id = 0x0A  # IMG
-    file_time = 1738351687
+    file_id = 0x0A
+    file_time = 0
     file_size = 0x00
-    file_target_sq = 0x00  # maximum sq count (240 bytes) --> error checking
-    flag_rq_file = False  # testing in the lab - once the image is received
+    file_target_sq = 0x00
+    flag_rq_file = False
     filename = ""
 
     # File TX parameters
-    gs_msg_sq = 0  # if file is multiple packets - number of packets received
+    gs_msg_sq = 0
     file_array = []
 
     @classmethod
-    def unpack_frame(self, msg_id, msg):
+    def _unpack_field(cls, msg, offset, field_format):
         """
-        Parses messages received from SC and dynamically unpacks it into a JSON format
-        to store into database.
-
-        Arguments:
-            msg_id: the id of the message
-            msg: the list of bits received
-
+        Unpack a single field from message bytes
+        
+        Args:
+            msg: Message byte array
+            offset: Current offset in message
+            field_format: Format character ('B', 'h', 'I', 'X', etc.)
+        
         Returns:
-        Parsed data in the form of a dictionary (JSON)
+            tuple: (value, new_offset)
         """
-
-
-        # Get the format and data types for that message
-        data_format = DATA_FORMATS[msg_id]
-
-        # TODO: Header check for all incoming packets
-        if msg_id == MSG_ID.SAT_HEARTBEAT or msg_id == MSG_ID.SAT_TM_NOMINAL:
-            if self.rx_msg_size != _TM_NOMINAL_SIZE:
-                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
-        
-        elif msg_id == MSG_ID.SAT_TM_HAL:
-            if self.rx_msg_size != _TM_HAL_SIZE:
-                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
-
-        elif msg_id == MSG_ID.SAT_TM_STORAGE:
-            if self.rx_msg_size != _TM_STORAGE_SIZE:
-                print("\033[31m[COMMS ERROR] Message length incorrect\033[0m")
-        
+        if field_format == FORMAT_FIXED_POINT_HP:
+            byte_slice = msg[offset:offset + 4]
+            value = convert_fixed_point_to_float_hp(byte_slice)
+            return value, offset + 4
+            
+        elif field_format == FORMAT_FIXED_POINT_LP:
+            byte_slice = msg[offset:offset + 4]
+            value = convert_fixed_point_to_float_lp(byte_slice)
+            return value, offset + 4
+            
         else:
-            pass
+            # Standard struct format
+            format_string = ">" + field_format
+            size = struct.calcsize(format_string)
+            value = struct.unpack(format_string, msg[offset:offset + size])[0]
+            return value, offset + size
 
+    @classmethod
+    def unpack_frame(cls, msg_id, msg):
+        """
+        Parse message from satellite and unpack into dictionary format
+        
+        Args:
+            msg_id: Message ID
+            msg: Raw message bytes (including 4-byte header)
+        
+        Returns:
+            dict: Parsed telemetry data organized by subsystem
+        """
+        # Get the format definition for this message
+        data_format = cls._FORMAT_MAP.get(msg_id)
+        if not data_format:
+            print(f"\033[31m[COMMS ERROR] Unknown message ID: {msg_id}\033[0m")
+            return {}
+
+        # Verify message size
+        expected_size = cls._SIZE_MAP.get(msg_id)
+        if expected_size and cls.rx_msg_size != expected_size:
+            print(f"\033[31m[COMMS ERROR] Message length incorrect. Expected {expected_size}, got {cls.rx_msg_size}\033[0m")
+
+        # Skip 4-byte header (msg_id, seq_count, packet_length)
         msg = msg[4:]
-
+        
         parsed_data = {}
-        offset = 0  # This is where we start reading from the first byte
+        offset = 0
+
+        # Unpack each subsystem
         for subsystem, fields in data_format.items():
             parsed_data[subsystem] = {}
 
-            # Create struct format string dynamically by computing size and getting the format strings
-            format_string = ">"+"".join([field[1] for field in fields])
-            size = struct.calcsize(format_string)
-            try: 
-                unpacked_values = struct.unpack(format_string, msg[offset : offset + size])
+            # Unpack each field
+            for field_name, field_format in fields:
+                try:
+                    value, offset = cls._unpack_field(msg, offset, field_format)
+                    parsed_data[subsystem][field_name] = value
+                    
+                    # Optional: Print unpacked values for debugging
+                    # print(f"Unpacked {subsystem}.{field_name} ({field_format}): {value}")
 
-                # Map unpacked values to field names for each subsystem
-                for i, (field_name, _) in enumerate(fields):
-                    parsed_data[subsystem][field_name] = unpacked_values[i]
+                except Exception as e:
+                    print(f"\u001b[31m[COMMS ERROR] Failed to unpack {subsystem}.{field_name}: {e}\u001b[0m")
+                    parsed_data[subsystem][field_name] = None
+                    # Skip this field's bytes
+                    offset += get_format_size(field_format)
 
-                offset += size  # Move offset forward
-            
-            except struct.error: 
-                # print(struct.error)
-                print (f"\u001b[31m[COMMS ERROR] Unsuccessful unpacking - struct error. Msg size received: {self.rx_msg_size} \u001b[0m")
-
-
-        print("Unpacking parsed data: ", parsed_data)
+        print(f"Successfully unpacked {cls.get_message_name(msg_id)} telemetry")
         return parsed_data
 
-
     @classmethod
-    def unpack_message_header(self):
-        # Get the current time
+    def unpack_message_header(cls):
+        """
+        Unpack message header from received message
+        
+        Message structure:
+        - Bytes 0-1: Source and destination IDs
+        - Byte 2: Message ID
+        - Bytes 3-4: Sequence count
+        - Byte 5: Message size
+        """
+        # Get current timestamp
         current_time = datetime.datetime.now()
-        # Format the current time
         formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S\n")
         formatted_time = formatted_time.encode("utf-8")
 
-        # Unpack RX message header
-        self.rx_src_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        self.rx_dst_id = int.from_bytes((self.rx_message[1:2]), byteorder="big")
-        self.rx_message = self.rx_message[2:]
+        # Unpack source header
+        cls.rx_src_id = int.from_bytes(cls.rx_message[0:1], byteorder="big")
+        cls.rx_dst_id = int.from_bytes(cls.rx_message[1:2], byteorder="big")
+        cls.rx_message = cls.rx_message[2:]
 
-        # TODO: Error checking based on source header
-        print("Source Header:", self.rx_src_id, self.rx_dst_id)
+        print(f"Source Header: SRC={cls.rx_src_id}, DST={cls.rx_dst_id}")
         
         # Unpack message header
-        self.rx_msg_id = int.from_bytes((self.rx_message[0:1]), byteorder="big")
-        self.rx_msg_sq = int.from_bytes(self.rx_message[1:3], byteorder="big")
-        self.rx_msg_size = int.from_bytes(self.rx_message[3:4], byteorder="big")
+        cls.rx_msg_id = int.from_bytes(cls.rx_message[0:1], byteorder="big")
+        cls.rx_msg_sq = int.from_bytes(cls.rx_message[1:3], byteorder="big")
+        cls.rx_msg_size = int.from_bytes(cls.rx_message[3:4], byteorder="big")
+        
+        print(f"Message Header: ID=0x{cls.rx_msg_id:02X}, SEQ={cls.rx_msg_sq}, SIZE={cls.rx_msg_size}")
+
+    @classmethod
+    def get_message_name(cls, msg_id):
+        """Get human-readable name for message ID"""
+        names = {
+            MSG_ID_SAT_HEARTBEAT: "SAT_HEARTBEAT",
+            MSG_ID_SAT_TM_NOMINAL: "SAT_TM_NOMINAL",
+            MSG_ID_SAT_TM_HAL: "SAT_TM_HAL",
+            MSG_ID_SAT_TM_STORAGE: "SAT_TM_STORAGE",
+        }
+        return names.get(msg_id, f"UNKNOWN (0x{msg_id:02X})")
+
+
+# Backward compatibility - maintain RECEIVE class name if needed
+class RECEIVE(TelemetryUnpacker):
+    """Alias for backward compatibility"""
+    pass
