@@ -1,14 +1,14 @@
 """
 Telemetry Unpacker for Ground Station (Standard Python)
 
-Unpacks telemetry data according to telemetry_config.py definitions
+Unpacks telemetry data according to telemetry_definition.py definitions
 """
 
 import struct
 import datetime
 
 # Import telemetry configuration and helpers
-from lib.telemetry.telemetry_config import (
+from lib.telemetry.tid.telemetry_definition import (
     HEARTBEAT_NOMINAL_FORMAT,
     TM_STORAGE_FORMAT,
     TM_HAL_FORMAT,
@@ -18,6 +18,8 @@ from lib.telemetry.telemetry_config import (
     MSG_ID_SAT_TM_HAL,
     MSG_ID_SAT_TM_STORAGE,
     MSG_ID_SAT_TM_NOMINAL,
+)
+from lib.telemetry.tid.telemetry_helper import (
     get_format_size,
     # Conversion helpers
     convert_fixed_point_to_float_hp,
@@ -33,7 +35,7 @@ TM_PAYLOAD_SIZE = 0
 
 class TelemetryUnpacker:
     """
-    Unpacks telemetry data from satellite using format definitions from telemetry_config.py
+    Unpacks telemetry data from satellite using format definitions from telemetry_definition.py
     """
 
     # Message ID to format mapping

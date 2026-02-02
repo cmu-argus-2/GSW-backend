@@ -3,7 +3,11 @@ import time
 # Extract the arguments and return the payload
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
-from lib.telemetry.helpers import *
+from lib.telemetry.tid.telemetry_helper import (
+    pack_unsigned_short_int,
+    pack_unsigned_long_int,
+    pack_signed_long_int,
+)
 
 MSG_LENGTHS = {
     MSG_ID.GS_CMD_SWITCH_TO_STATE: 5,
