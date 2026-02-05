@@ -3,8 +3,11 @@ import os
 
 from collections import deque
 from lib.gs_constants import MSG_ID
+from lib.database.ingest_gateway import Ingest
 from lib.telemetry.unpacking import RECEIVE
 from lib.telemetry.packing import TRANSMIT
+
+MyIngest = Ingest(host="172.20.70.48", port=5555, timeout=5.0, retries=3)
 
 
 import time 
@@ -111,3 +114,8 @@ def add_downlink_data(msg_id, rx_message):
         print ("*** Added to Mock DB ***")
     else:
         print ("*** Added to Mock DB ***")
+
+
+def add_gs_database(msg_id, rx_message):
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
+        MyIngest.send(RECEIVE.unpack_frame(msg_id, rx_message))

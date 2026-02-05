@@ -17,10 +17,10 @@ from lib.telemetry.filetransfer import FILETRANSFER
 
 if config.MODE == "DB":
     from lib.database.db_command_queue import get_latest_command, remove_latest_command, commands_available
-    from lib.database.db_rx_data import add_downlink_data, add_File_Packet
+    from lib.database.db_rx_data import add_downlink_data, add_File_Packet, add_gs_database
 elif config.MODE == "DBG":
     from lib.database.debug_queue import get_latest_command, remove_latest_command, commands_available
-    from lib.database.debug_queue import add_downlink_data, add_File_Packet
+    from lib.database.debug_queue import add_downlink_data, add_File_Packet, add_gs_database
 
 
 """
@@ -126,6 +126,7 @@ class GS:
                 
                 elif RECEIVE.rx_msg_id in MSG_ID.VALID_RX_MSG_IDS:
                     add_downlink_data(RECEIVE.rx_msg_id, RECEIVE.rx_message)
+                    add_gs_database(RECEIVE.rx_msg_id, RECEIVE.rx_message)
                     self.state = GS_COMMS_STATE.DB_RW
                     self.database_readwrite()        
                           

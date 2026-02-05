@@ -1,8 +1,11 @@
 import json
 
 from lib.database.db_server import query
+from lib.database.ingest_gateway import Ingest
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
+
+MyIngest = Ingest(host="172.20.70.48", port=5555, timeout=5.0, retries=3)
 
 
 def handle_command_ACK(ack):
@@ -26,9 +29,7 @@ def add_Telemetry(msg_id, tm_data):
         return
 
     msg_name = ""
-    if msg_id == MSG_ID.SAT_HEARTBEAT:
-        msg_name = "SAT_HEARTBEAT"
-    elif msg_id == MSG_ID.SAT_TM_NOMINAL:
+    if msg_id == MSG_ID.SAT_TM_NOMINAL:
         msg_name = "SAT_TM_NOMINAL"
     elif msg_id == MSG_ID.SAT_TM_HAL:
         msg_name = "SAT_TM_HAL"
@@ -131,4 +132,9 @@ def add_downlink_data(msg_id, rx_message):
     #Insert ACK into db
     elif msg_id == MSG_ID.SAT_ACK:
         add_Ack()
+
+
+def add_gs_database(msg_id, rx_message):
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
+        MyIngest.send(RECEIVE.unpack_frame(msg_id, rx_message))
 
