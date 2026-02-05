@@ -3,6 +3,9 @@
 # HELPER FUNCTIONS - FIXED POINT CONVERSION
 # ============================================================================
 
+from .telemetry_definition import FORMAT_FIXED_POINT_HP, FORMAT_FIXED_POINT_LP
+
+
 def convert_float_to_fixed_point_lp(val):
     """
     Convert float value to fixed point with 2 integer bytes, 2 decimal bytes (low-precision).

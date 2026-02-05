@@ -26,7 +26,9 @@ def add_Telemetry(msg_id, tm_data):
         return
 
     msg_name = ""
-    if msg_id == MSG_ID.SAT_TM_NOMINAL:
+    if msg_id == MSG_ID.SAT_HEARTBEAT:
+        msg_name = "SAT_HEARTBEAT"
+    elif msg_id == MSG_ID.SAT_TM_NOMINAL:
         msg_name = "SAT_TM_NOMINAL"
     elif msg_id == MSG_ID.SAT_TM_HAL:
         msg_name = "SAT_TM_HAL"
