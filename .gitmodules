@@ -1,0 +1,3 @@
+[submodule "lib/telemetry/splat"]
+	path = lib/telemetry/splat
+	url = git@github.com-personal:cmu-argus-2/splat.git
