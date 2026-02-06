@@ -1,6 +1,11 @@
 import sys
 
-from lib.shell_utils import (receive_loop, transmit_loop, downlink_all)
+from scripts.remote_update import  run_remote_update
+run_remote_update()
+
+from lib.shell_utils import (receive_loop, transmit_loop, downlink_all, op_mode)
+
+op_mode()
 
 while True:
     connection_prompt = """

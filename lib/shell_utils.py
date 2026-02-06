@@ -8,6 +8,10 @@ from random import randint
 import RPi.GPIO as GPIO
 import serial
 
+def format_bytes(byte_data):
+    return " ".join(f"0x{byte:02X}" for byte in byte_data)
+
+
 # from lib.database.database_utils import initialize_database
 from lib.groundstation import GS
 
@@ -42,6 +46,50 @@ def transmit_loop():
         GS.transmit_force(tx_packet)
         time.sleep(1)
 
+
+def op_mode():
+    """
+    This is the mode that will be used for operation
+    It will always listen for messages from the spacecraft unless there are commands to be sent
+    """    
+    database = None
+
+    # Boolean, whether message was received or not
+    msg_rx = False
+
+    signal.signal(
+        signal.SIGINT,
+        lambda signum, frame: hard_exit(GS.radiohead, database, signum, frame),
+    )
+
+    lastPrint = time.time()
+    printFreq = 10  # seconds
+
+    GS.set_rx_mode()   # set the chip to rx mode
+    
+    while True:
+        # check for availalbe packet
+        new_rx_packet = GS.check_rx_packet_available()
+        new_tx_packet = GS.check_tx_cmd_available()
+
+        if new_rx_packet:
+            print("Got new packet")
+            msg_rx = GS.get_rx_packet()
+            GS.process_rx_packet(msg_rx)
+            
+        if new_tx_packet:
+            print("Got new command to send")
+            GS.transmit_message()
+            GS.set_rx_mode()   # go back to rx mode
+            
+            
+        if time.time() - lastPrint >= printFreq:
+            lastPrint = time.time()
+            print("Waiting for packet...")
+            
+    
+    
+    
 
 def receive_loop():
     # point_prompt = "Tag for stored data (leave blank for argus-1):"

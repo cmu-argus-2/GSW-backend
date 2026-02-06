@@ -18,6 +18,9 @@ MSG_LENGTHS = {
 }
 
 
+def format_bytes(byte_data):
+    return " ".join(f"0x{byte:02X}" for byte in byte_data)
+
 class TRANSMIT:
     # RQ message parameters for commanding SC
     # Request command
@@ -199,3 +202,4 @@ class TRANSMIT:
             print("Successfully packed ", self.rq_cmd)
 
         self.tx_message = src_dst_header + md_payload
+        print("Packed message: ", format_bytes(self.tx_message))

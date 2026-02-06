@@ -7,6 +7,11 @@ from lib.telemetry.unpacking import RECEIVE
 from lib.telemetry.packing import TRANSMIT
 
 
+from lib.database.ingest_gateway import Ingest
+MyIngest = Ingest(host="172.20.48.220", port=5555, timeout=5.0, retries=3)
+
+
+
 import time 
 
 # Global FIFO Queue
@@ -63,9 +68,9 @@ File IDs to tags mapping:
 # add_new_command({"id": MSG_ID.GS_CMD_FILE_METADATA, "args" : {"file_id": 10, "file_time": int(time.time())}})
 
 # # Sending TM commands
-add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
+# add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_STORAGE, "args" : {}})
 add_new_command({"id": MSG_ID.GS_CMD_REQUEST_TM_HAL, "args" : {}})
-add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
+# add_new_command({"id": MSG_ID.GS_CMD_FORCE_REBOOT, "args" : {}})
 
 def add_File_Packet(msg_data, file_db_id):
     print ("*** Added file pkt to Mock DB *** ")
@@ -111,3 +116,23 @@ def add_downlink_data(msg_id, rx_message):
         print ("*** Added to Mock DB ***")
     else:
         print ("*** Added to Mock DB ***")
+        
+        
+        
+def add_gs_database(msg_id, rx_message):
+    """
+    New simple version to add the data to the gs_database
+    
+    this is a work in progress
+    """
+    
+    if msg_id in MSG_ID.TM_FRAME_TYPES:
+        print("Sending telemetry packet to gs_database")
+        # want to send the data to the ingest program
+        data_dict = RECEIVE.unpack_frame(msg_id, rx_message)
+        print("Adding to gs database: ", data_dict)
+        print()
+        MyIngest.send(data_dict)
+        
+
+

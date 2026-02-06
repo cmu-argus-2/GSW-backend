@@ -5,7 +5,7 @@ class MSG_ID:
     """
 
     # Source header ID for Argus - THIS MUST BE UNIQUE FOR EACH SPACECRAFT
-    ARGUS_1_ID = 0x01
+    ARGUS_1_ID = 0x00
     ARGUS_2_ID = 0x02
 
     # Source header ID for GS
