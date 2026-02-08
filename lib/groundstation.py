@@ -28,6 +28,8 @@ from lib.database.database_backend import GSGateway   # this is comming in to re
 
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
 from lib.telemetry.splat.splat.telemetry_helper import format_bytes
+
+from lib.command_interface.command_interface import CommandInterfaceGateway
 """
 GS state functions:
 receive() [RX], transmit() [TX], database_readwrite() [DB_RW]
@@ -52,7 +54,10 @@ class GS:
     
     # init the database gateway
     gs_database = GSGateway()
-    gs_database.start_command_socket(port=6000)
+    
+    # init the command interface gateway
+    command_interface_gateway = CommandInterfaceGateway()
+    command_interface_gateway.serve_in_thread()
 
     # Initialize GPIO
     GPIO.setmode(GPIO.BCM)
@@ -170,7 +175,7 @@ class GS:
         check if there is a command to be transmitted
         """
         
-        if self.gs_database.commands_available() == 0:
+        if self.command_interface_gateway.commands_available() == 0:
             # no commands available
             return False
         
@@ -250,7 +255,7 @@ class GS:
 
         GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
-        command = self.gs_database.pop_command()
+        command = self.command_interface_gateway.pop_command()
         command_bytes = pack(command)
     
         # header_from and header_to set to 255
