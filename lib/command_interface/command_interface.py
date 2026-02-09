@@ -8,10 +8,17 @@ it will used xmlrpc to send the commands
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
 
 
-from xmlrpc.server import SimpleXMLRPCServer
 from collections import deque
 import threading
 
+from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
+
+# Create a custom handler that suppresses logs
+class QuietRequestHandler(SimpleXMLRPCRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Do nothing, effectively silencing the log
+ 
+  
 
 class CommandInterfaceGateway:
     
@@ -26,7 +33,7 @@ class CommandInterfaceGateway:
 
         self.thread_running = False
 
-        self.server = SimpleXMLRPCServer((host, port))
+        self.server = SimpleXMLRPCServer((host, port), requestHandler=QuietRequestHandler)  # <--- Use the quiet class here)
         self.server.register_function(self.add_command, "add_command")   # this is the command that will be  called to add command
         self.server.register_function(self.ping, "ping")    # this is the command that command interface will call to see if the server is available
         self.server.register_function(self.add, "add")      # this is just a test command
@@ -67,7 +74,7 @@ class CommandInterfaceGateway:
         """
         Function that will be called by command interface periodically to see if everything is working
         """
-        print("ping received")
+        # print("ping received")
         return True
 
     def add(self, x, y):
