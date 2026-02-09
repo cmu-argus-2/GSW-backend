@@ -23,7 +23,7 @@ from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
 from lib.database.ingest_gateway import Ingest
 
-from lib.telemetry.splat.telemetry_codec import Report, Variable, Command
+from lib.telemetry.splat.splat.telemetry_codec import Report, Variable, Command
 
 
 # -----------------------------------------------------------------------------
@@ -210,10 +210,12 @@ class GSGateway:
             print(f"Invalid report type: {type(report)}")
             return
         
-        # pretty print the report.variables
-        for ss_name, vars in report.variables.items():
-            for var_name, value in vars.items():
-                print(f"  {ss_name}-{var_name}: {value}")
+        # # pretty print the report.variables
+        # for ss_name, vars in report.variables.items():
+        #     for var_name, value in vars.items():
+        #         print(f"  {ss_name}-{var_name}: {value}")
+        
+        print(report.variables)
         
         self._send_tm_to_database(report.variables)
         

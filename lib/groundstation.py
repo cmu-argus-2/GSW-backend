@@ -26,7 +26,7 @@ elif config.MODE == "DBG":
     
 from lib.database.database_backend import GSGateway   # this is comming in to replace the old database imports
 
-from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
+from lib.telemetry.splat.splat.telemetry_codec import Ack, pack, unpack, Report, Variable, Command
 from lib.telemetry.splat.splat.telemetry_helper import format_bytes
 
 from lib.command_interface.command_interface import CommandInterfaceGateway
@@ -243,6 +243,9 @@ class GS:
         if type(message_object) == Variable:
             print(f"Received variable: {message_object.name} from SAT ID {sat_id}")
             self.gs_database.add_variable(message_object, sat_id)
+        if type(message_object) == Ack:
+            print(f"\033[32mReceived Ack: {message_object} from SAT ID {sat_id}\033[0m\n")
+            # should send this to the command interface
         
         # # add the data to the gs viz
         # self.gs_database.handle_downlink()
@@ -261,7 +264,7 @@ class GS:
         # header_from and header_to set to 255
         self.radiohead.send_message(command_bytes, 255, 1)
 
-        print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m")
+        print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
         GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
     
     @classmethod
@@ -289,13 +292,13 @@ class GS:
             # header_from and header_to set to 255
             self.radiohead.send_message(TRANSMIT.tx_message, 255, 1)
 
-            print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m")
+            print(f"Transmitted CMD. \033[34mRequesting ID: {TRANSMIT.rq_cmd}\033[0m\n")
             self.state = GS_COMMS_STATE.RX
             GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off
 
         else:
             self.state = GS_COMMS_STATE.RX
-            raise Exception(f"\033[31m[COMMS ERROR] Not in TX state. In {self.state}\033[0m")
+            raise Exception(f"\033[31m[COMMS ERROR] Not in TX state. In {self.state}\033[0m\n")
 
     @classmethod
     def transmit_force(self, packet):
