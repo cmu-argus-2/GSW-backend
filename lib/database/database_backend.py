@@ -206,7 +206,7 @@ class GSGateway:
         """
         
         # check the type
-        if type(report) != Report:
+        if report.__class__.__name__ != 'Report':
             print(f"Invalid report type: {type(report)}")
             return
         
@@ -225,7 +225,7 @@ class GSGateway:
         """
         
         # check the type
-        if type(variable) != Variable:
+        if variable.__class__.__name__ != 'Variable':
             print(f"Invalid variable type: {type(variable)}")
             return
         
