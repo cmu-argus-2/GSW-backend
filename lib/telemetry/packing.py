@@ -1,8 +1,10 @@
 import time
 
 # Extract the arguments and return the payload
+from lib.config import AUTH_KEY
 from lib.gs_constants import MSG_ID
 from lib.telemetry.unpacking import RECEIVE
+from lib.auth.command_auth import compute_mac, get_next_nonce
 from lib.telemetry.tid.telemetry_helper import (
     pack_unsigned_short_int,
     pack_unsigned_long_int,
@@ -198,4 +200,7 @@ class TRANSMIT:
             )
             print("Successfully packed ", self.rq_cmd)
 
-        self.tx_message = src_dst_header + md_payload
+        plaintext = src_dst_header + md_payload
+        nonce = get_next_nonce()
+        mac = compute_mac(bytes.fromhex(AUTH_KEY), self.rq_cmd["id"], md_payload, nonce)
+        self.tx_message = plaintext + nonce + mac
