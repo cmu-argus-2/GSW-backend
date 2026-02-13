@@ -1,11 +1,8 @@
 import sys
 
-from scripts.remote_update import  run_remote_update
-run_remote_update()
 
 from lib.shell_utils import (receive_loop, transmit_loop, downlink_all, op_mode)
 
-op_mode()
 
 while True:
     connection_prompt = """
@@ -13,6 +10,7 @@ What operation mode do you want?
 (r) Normal Operation [Downlink and Uplink Functionality]
 (d) Downlink All Mode
 (t) Only Transmit Operation 
+(o) Only Downlink Operation
 (q) quit   
 Input: """
     conn_type = input(connection_prompt)
@@ -23,6 +21,7 @@ Input: """
         "r": receive_loop, 
         "d": downlink_all,
         "t": transmit_loop,
+        "o": op_mode
     }
 
     options[conn_type]()
