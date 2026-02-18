@@ -239,7 +239,7 @@ class GS:
             self.gs_database.add_report(message_object, sat_id)
         if type(message_object) == Command:
             print(f"Received command: {message_object.name} from SAT ID {sat_id}")
-            print("Please implement command")
+            self.gs_database.add_command(message_object, sat_id)
         if type(message_object) == Variable:
             print(f"Received variable: {message_object.name} from SAT ID {sat_id}")
             self.gs_database.add_variable(message_object, sat_id)
