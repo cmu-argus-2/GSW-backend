@@ -40,7 +40,7 @@ logger = logging.getLogger("GS_GATEWAY")
 # GS Gateway
 # -----------------------------------------------------------------------------
 class GSGateway:
-    def __init__(self, ingest_host="172.20.48.220", ingest_port=5555):
+    def __init__(self, ingest_host="localhost", ingest_port=5555):
         self.command_queue = deque()
         self.current_file_metadata = {}
 
