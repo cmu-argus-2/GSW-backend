@@ -14,6 +14,9 @@ from lib.telemetry.packing import TRANSMIT
 from lib.telemetry.unpacking import RECEIVE
 from lib.telemetry.filetransfer import FILETRANSFER
 
+from lib.config import AUTH_KEY
+from lib.auth.command_auth import compute_mac, get_next_nonce
+
 
 if config.MODE == "DB":
     from lib.database.db_command_queue import get_latest_command, remove_latest_command, commands_available
@@ -260,7 +263,14 @@ class GS:
 
         command = self.command_interface_gateway.pop_command()
         command_bytes = pack(command)
-    
+        
+        nonce = get_next_nonce()
+        mac = compute_mac(bytes.fromhex(AUTH_KEY), command_bytes, nonce)
+        
+        # add the header, nonce and mac
+        header = bytes([69])  # header_from and header_to set to 255
+        command_bytes = header + nonce + mac + command_bytes
+        
         # header_from and header_to set to 255
         self.radiohead.send_message(command_bytes, 255, 1)
 
