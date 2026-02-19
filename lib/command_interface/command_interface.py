@@ -6,7 +6,7 @@ it is made using flask. The backend will call functions implemented here to send
 it will used xmlrpc to send the commands
 """
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
-
+from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT
 
 from collections import deque
 import threading
@@ -28,7 +28,7 @@ class CommandInterfaceGateway:
     groundstation will remove the commands from the command queue and add them to the database as well
     """
     
-    def __init__(self, host="0.0.0.0", port=8000):
+    def __init__(self, host=COMMAND_INTERFACE_IP, port=COMMAND_INTERFACE_PORT):
         self.command_queue = deque()
 
         self.thread_running = False
@@ -107,9 +107,7 @@ class CommandInterfaceGateway:
         # allowing the loop to check if self.thread_running is still True.
         self.server.socket.settimeout(0.5)
 
-        try:
-            print("Server running on %s:%s" % self.server.server_address)
-            
+        try:            
             # 2. Loop while the flag is True
             while self.thread_running:
                 # 3. Handle a single request, then loop back to check the flag

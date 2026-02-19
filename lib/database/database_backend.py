@@ -18,6 +18,7 @@ import socket
 import logging
 import threading
 from collections import deque
+from lib.config import INGEST_GATEWAY_IP, INGEST_GATEWAY_PORT
 
 from lib.database.ingest_gateway import Ingest
 
@@ -38,7 +39,7 @@ logger = logging.getLogger("GS_GATEWAY")
 # GS Gateway
 # -----------------------------------------------------------------------------
 class GSGateway:
-    def __init__(self, ingest_host="172.20.48.220", ingest_port=5555):
+    def __init__(self, ingest_host=INGEST_GATEWAY_IP, ingest_port=INGEST_GATEWAY_PORT):
         self.command_queue = deque()
         self.current_file_metadata = {}
 
