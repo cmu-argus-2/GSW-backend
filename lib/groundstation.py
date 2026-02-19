@@ -115,21 +115,18 @@ class GS:
             return
         
         if type(message_object) == Report:
-            print(f"Received report: {message_object.name} from SAT ID {sat_id}")
+            print(f"\033[32mReceived report: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_report(message_object, sat_id)
         if type(message_object) == Command:
-            print(f"Received command: {message_object.name} from SAT ID {sat_id}")
+            print(f"\033[32mReceived command: {message_object.name} from SAT ID {sat_id}\033[0m")
             print("Please implement command")
         if type(message_object) == Variable:
-            print(f"Received variable: {message_object.name} from SAT ID {sat_id}")
+            print(f"\033[32mReceived variable: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_variable(message_object, sat_id)
         if type(message_object) == Ack:
             print(f"\033[32mReceived Ack: {message_object} from SAT ID {sat_id}\033[0m\n")
             # should send this to the command interface
-        
-        # # add the data to the gs viz
-        # self.gs_database.handle_downlink()
-        
+
     @classmethod
     def transmit_message(self):
         """

@@ -19,8 +19,6 @@ import logging
 import threading
 from collections import deque
 
-from lib.gs_constants import MSG_ID
-from lib.telemetry.unpacking import RECEIVE
 from lib.database.ingest_gateway import Ingest
 
 from lib.telemetry.splat.splat.telemetry_codec import Report, Variable, Command
@@ -176,26 +174,6 @@ class GSGateway:
     # -------------------------------------------------------------------------
     # Entry point for satellite packets
     # -------------------------------------------------------------------------
-    def handle_downlink(self, msg_id, raw_message):
-        try:
-            unpacked = RECEIVE.unpack_frame(msg_id, raw_message)
-            print("Unpacked data: ", unpacked)
-        except Exception as e:
-            print(f"Failed to unpack frame: {e}")
-            return
-
-        if msg_id == MSG_ID.SAT_FILE_METADATA:
-            self._handle_file_metadata(unpacked)
-
-        elif msg_id == MSG_ID.SAT_DOWNLINK_ALL_FILES:
-            self._log_file_csv(msg_id)
-
-        elif msg_id in MSG_ID.TM_FRAME_TYPES:
-            self._send_tm_to_database(unpacked)
-
-        else:
-            print(f"Unhandled message type: {msg_id}")
-            
     
     def add_report(self, report, sat_id):
         """
@@ -240,61 +218,6 @@ class GSGateway:
         self._send_tm_to_database(variable_dict)
         
         
-        
-
-    # -------------------------------------------------------------------------
-    # File Metadata Handling
-    # -------------------------------------------------------------------------
-    def _handle_file_metadata(self, unpacked):
-        try:
-            md = unpacked["METADATA"]
-
-            self.current_file_metadata = {
-                "file_id": md["FILE_ID"],
-                "file_time": md["FILE_TIME"],
-                "file_size": md["FILE_SIZE"],
-                "file_target_sq": md["FILE_TARGET_SQ"],
-            }
-
-            print(f"Stored file metadata: {self.current_file_metadata}")
-
-        except KeyError as e:
-            print(f"Bad metadata packet: missing {e}")
-
-    # -------------------------------------------------------------------------
-    # CSV Logging
-    # -------------------------------------------------------------------------
-    def _log_file_csv(self, msg_id):
-        csv_file = "downlink_log.csv"
-        fieldnames = [
-            "timestamp",
-            "msg_id",
-            "file_id",
-            "file_time",
-            "file_size",
-            "file_target_sq",
-        ]
-
-        try:
-            file_exists = os.path.isfile(csv_file)
-
-            with open(csv_file, mode="a", newline="") as file:
-                writer = csv.DictWriter(file, fieldnames=fieldnames)
-
-                if not file_exists:
-                    writer.writeheader()
-
-                writer.writerow({
-                    "timestamp": time.time(),
-                    "msg_id": msg_id,
-                    **self.current_file_metadata,
-                })
-
-            print("Logged file entry to CSV")
-
-        except Exception as e:
-            print(f"Failed writing CSV: {e}")
-
     # -------------------------------------------------------------------------
     # Telemetry → Ingest DB
     # -------------------------------------------------------------------------
