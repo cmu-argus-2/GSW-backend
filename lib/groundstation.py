@@ -14,8 +14,10 @@ from lib.auth.command_auth import compute_mac, get_next_nonce
 from lib.command_interface.command_interface import CommandInterfaceGateway
 from lib.database.database_backend import GSGateway   # this is comming in to replace the old database imports
 
-from lib.telemetry.splat.splat.telemetry_codec import Ack, pack, unpack, Report, Variable, Command
+from lib.telemetry.splat.splat.telemetry_codec import Ack, pack, unpack, Report, Variable, Command, Fragment
 from lib.telemetry.splat.splat.telemetry_helper import format_bytes
+
+from lib.telemetry.transaction_middleware import TransactionMiddleware
 
 
 class GS:
@@ -28,6 +30,10 @@ class GS:
     # init the command interface gateway
     command_interface_gateway = CommandInterfaceGateway()
     command_interface_gateway.serve_in_thread()
+    
+    # init the middle man responsible for handling the transaction related commands
+    transaction_middleware = TransactionMiddleware()
+    
 
     # Initialize GPIO
     GPIO.setmode(GPIO.BCM)
@@ -58,7 +64,6 @@ class GS:
         if self.command_interface_gateway.commands_available() == 0:
             # no commands available
             return False
-        
         return True
     
     @classmethod
@@ -114,12 +119,21 @@ class GS:
             print(f"\033[31m[COMMS ERROR] Failed to unpack message from SAT ID {sat_id}\033[0m")
             return
         
+        print(f"Decoded message object: {message_object}")
+        
         if type(message_object) == Report:
             print(f"\033[32mReceived report: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_report(message_object, sat_id)
         if type(message_object) == Command:
             print(f"\033[32mReceived command: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_command(message_object, sat_id)
+            
+            # if command is related to transaction 
+            # [check] - dont love doing it here, should think of a better arch
+            if message_object.name == "INIT_TRANS":
+                self.transaction_middleware.process_init_trans(message_object)
+        if type(message_object) == Fragment:
+            self.transaction_middleware.process_fragment(message_object)
         if type(message_object) == Variable:
             print(f"\033[32mReceived variable: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_variable(message_object, sat_id)
@@ -136,6 +150,13 @@ class GS:
         GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
         command = self.command_interface_gateway.pop_command()
+        
+        # check to see if command is CREATE_TRANS
+        # [check] - dont love doing it here, should think of a better arch
+        if command.name == "CREATE_TRANS":
+            # if it is then we need to pass it to the transaction middleware to handle the transaction related commands
+            self.transaction_middleware.process_create_trans(command)
+        
         command_bytes = pack(command)
         
         nonce = get_next_nonce()
