@@ -122,12 +122,7 @@ class GSGateway:
             print(f"Invalid command type: {type(command)}")
             return
         
-        if command.name == "INIT_TRANS":
-            # received a command to init the transaction, need to create the transaction
-            self.init_transaction(command)
-        if command.name == "TRANS_PAYLOAD":
-            # received a command with fragments, lets add the data
-            self.add_fragment_to_transaction(command)
+        pass
             
 
         
