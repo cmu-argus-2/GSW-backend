@@ -191,5 +191,14 @@ class TransactionMiddleware:
         
         if is_completed:
             print(f"\033[32mTransaction with tid {tid} is completed, all fragments received\033[0m")
-            transaction.write_file("downlinked_data")        
+            transaction.write_file("downlinked_data")
+
+            # if there is img in file name and type is bin, will try and convert to png
+            if "img" in transaction.file_path and transaction.file_path.endswith(".bin"):
+                try:
+                    input_file = os.path.join("downlinked_data", transaction.file_path)
+                    output_file = os.path.join("downlinked_data", f"{transaction.file_path.split('.')[0]}.png")
+                    bin_to_png(input_file, output_file)
+                except Exception as e:
+                    print(f"Failed to convert binary file to PNG: {e}")
         return True        
