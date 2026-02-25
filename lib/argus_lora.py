@@ -187,12 +187,11 @@ class LoRa(object):
             time.sleep(0.1)
             self._mode = Definitions.MODE_STDBY
 
-    def send(self, data, header_to, header_id=0, header_flags=0):
+    def send(self, data, header_to=None, header_id=0, header_flags=0):
         self.wait_packet_sent()
         self.set_mode_idle()
         self.wait_cad()
 
-        header = [header_to, self._this_address, header_id, header_flags]
         if isinstance(data, int):
             data = [data]
         elif isinstance(data, bytes):
@@ -203,7 +202,7 @@ class LoRa(object):
         if self.crypto:
             data = [b for b in self._encrypt(bytes(data))]
 
-        payload = header + data
+        payload = data
 
         self._spi_write(Definitions.REG_0D_FIFO_ADDR_PTR, 0)
         self._spi_write(Definitions.REG_00_FIFO, payload)
@@ -212,39 +211,16 @@ class LoRa(object):
 
         return True
 
-    def send_to_wait(self, data, header_to, header_flags=0, retries=3):
+    def send_to_wait(self, data, header_to=None, header_flags=0, retries=3):
         self._last_header_id += 1
 
         for _ in range(retries + 1):
-            self.send(
-                data,
-                header_to,
-                header_id=self._last_header_id,
-                header_flags=header_flags,
-            )
+            self.send(data)
             self.set_mode_rx()
+            return True
 
-            if (
-                header_to == Definitions.BROADCAST_ADDRESS
-            ):  # Don't wait for acks from a broadcast message
-                return True
-
-            start = time.time()
-            while time.time() - start < self.retry_timeout + (
-                self.retry_timeout * random()
-            ):
-                if self._last_payload:
-                    if (
-                        self._last_payload.header_to == self._this_address
-                        and self._last_payload.header_flags & Definitions.FLAGS_ACK
-                        and self._last_payload.header_id == self._last_header_id
-                    ):
-                        # We got an ACK
-                        return True
-        return False
-
-    def send_ack(self, header_to, header_id):
-        self.send(b"!", header_to, header_id, Definitions.FLAGS_ACK)
+    def send_ack(self, header_to=None, header_id=None):
+        self.send(b"!")
         self.wait_packet_sent()
 
     def _spi_write(self, register, payload):
@@ -307,30 +283,11 @@ class LoRa(object):
             else:
                 rssi = round(rssi - 164, 2)
 
-            if packet_len >= 4:
-                header_to = packet[0]
-                header_from = packet[1]
-                header_id = packet[2]
-                header_flags = packet[3]
-                message = bytes(packet[4:]) if packet_len > 4 else b""
-
-                # for i in range(0,packet_len):
-                #     print(hex(packet[i]))
-
-                if (
-                    header_to != 255 and self._this_address != header_to
-                ) or self._receive_all is True:
-                    return
+            if packet_len > 0:
+                message = bytes(packet)
 
                 if self.crypto and len(message) % 16 == 0:
                     message = self._decrypt(message)
-
-                if (
-                    self._acks
-                    and header_to == self._this_address
-                    and not header_flags & Definitions.FLAGS_ACK
-                ):
-                    self.send_ack(header_from, header_id)
 
                 self.set_mode_rx()
 
@@ -338,17 +295,12 @@ class LoRa(object):
                     "Payload",
                     [
                         "message",
-                        "header_to",
-                        "header_from",
-                        "header_id",
-                        "header_flags",
                         "rssi",
                         "snr",
                     ],
-                )(message, header_to, header_from, header_id, header_flags, rssi, snr)
+                )(message, rssi, snr)
 
-                if not header_flags & Definitions.FLAGS_ACK:
-                    self.on_recv(self._last_payload)
+                self.on_recv(self._last_payload)
 
         elif self._mode == Definitions.MODE_TX and (irq_flags & Definitions.TX_DONE):
             self.set_mode_idle()

@@ -105,11 +105,11 @@ class GS:
         decode it and add it to the database
         """
         
-        print(f"Processing packet from SAT ID {msg_rx.header_from} with RSSI {msg_rx.rssi}")
-        print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
-        
         data_bytes = msg_rx.message
         sat_id = data_bytes[0]
+        
+        print(f"Processing packet from SAT ID {sat_id} with RSSI {msg_rx.rssi}")
+        print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
 
         data_bytes = data_bytes[1:]  # remove sat_id from the data bytes
 
