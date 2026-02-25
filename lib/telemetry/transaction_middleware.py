@@ -19,6 +19,7 @@ import os
 import time
 import threading
 import queue
+from scripts.bin_to_png import bin_to_png
 
 
 class TransactionMiddleware:
