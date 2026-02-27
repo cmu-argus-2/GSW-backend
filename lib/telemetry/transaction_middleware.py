@@ -167,7 +167,8 @@ class TransactionMiddleware:
         transaction.set_number_packets(number_of_packets)
         transaction.change_state(2)
 
-        json_file_path = os.path.join(self.session_folder, f"{tid}_{transaction.start_date}.json")
+        timestamp_str = datetime.fromtimestamp(transaction.start_date).strftime("%Y_%m_%d-%H_%M_%S")
+        json_file_path = os.path.join(self.session_folder, f"{tid}_{timestamp_str}.json")
         self._enqueue_dump(transaction, json_file_path)
         return True
     
@@ -190,7 +191,8 @@ class TransactionMiddleware:
         
         is_completed = transaction.add_fragment(frag)
 
-        json_file_path = os.path.join(self.session_folder, f"{tid}_{transaction.start_date}.json")
+        timestamp_str = datetime.fromtimestamp(transaction.start_date).strftime("%Y_%m_%d-%H_%M_%S")
+        json_file_path = os.path.join(self.session_folder, f"{tid}_{timestamp_str}.json")
         self._enqueue_dump(transaction, json_file_path)
         
         if is_completed:
