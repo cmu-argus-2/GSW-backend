@@ -158,13 +158,16 @@ class GS:
             self.transaction_middleware.process_create_trans(command)
         
         command_bytes = pack(command)
-        
-        nonce = get_next_nonce()
-        mac = compute_mac(bytes.fromhex(AUTH_KEY), command_bytes, nonce)
-        
-        # add the header, nonce and mac
         header = bytes([69])  # header_from and header_to set to 255
-        command_bytes = header + nonce + mac + command_bytes
+        
+        if AUTH_KEY is not None:
+            # means that we want to encrypt the data
+            nonce = get_next_nonce()
+            mac = compute_mac(bytes.fromhex(AUTH_KEY), command_bytes, nonce)
+            command_bytes = nonce + mac + command_bytes   # add teh encryption info to the command
+        
+        
+        command_bytes = header + command_bytes
         
         # header_from and header_to set to 255
         self.radiohead.send_message(command_bytes, 255, 1)
