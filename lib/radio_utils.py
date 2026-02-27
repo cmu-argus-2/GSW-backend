@@ -1,12 +1,14 @@
 from lib.argus_lora import LoRa, ModemConfig
 from lib.radiohead import RadioHead
 
+from lib.config import ARGUS_FREQ
+
 
 def initialize_radio() -> RadioHead:
     CHANNEL = 0
     INTERRUPT = 19
     ADDRESS = 255
-    FREQUENCY = 435
+    FREQUENCY = ARGUS_FREQ
     TX_POWER = 23
     MODEM_CONFIG = ModemConfig.Bw125Cr45Sf128
     RECEIVE_ALL = False

@@ -1,16 +1,35 @@
 import sys
+import os
+from pathlib import Path
 
 
-from lib.shell_utils import (receive_loop, transmit_loop, downlink_all, op_mode)
+def _load_env_file(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("'\"")
+
+        # Do not override vars already provided by the shell environment.
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_env_file(Path(__file__).resolve().parent / ".env")
+
+from lib.shell_utils import op_mode
 
 
 while True:
     connection_prompt = """
 What operation mode do you want?
-(r) Normal Operation [Downlink and Uplink Functionality]
-(d) Downlink All Mode
-(t) Only Transmit Operation 
-(o) Only Downlink Operation
+(o) Operations Mode 
 (q) quit   
 Input: """
     conn_type = input(connection_prompt)
@@ -18,9 +37,6 @@ Input: """
         sys.exit(0)
 
     options = {
-        "r": receive_loop, 
-        "d": downlink_all,
-        "t": transmit_loop,
         "o": op_mode
     }
 
