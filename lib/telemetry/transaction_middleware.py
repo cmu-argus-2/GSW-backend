@@ -20,7 +20,7 @@ import time
 import threading
 import queue
 from scripts.bin_to_png import bin_to_png
-
+from datetime import datetime
 
 class TransactionMiddleware:
     """
@@ -39,7 +39,9 @@ class TransactionMiddleware:
             os.makedirs(self.storage_folder)
             
         # create the session folder with the timestamp
-        self.session_folder = os.path.join(self.storage_folder, f"session_{int(time.time())}")
+        # session folder should be session_yyyy_mm_dd-hh_mm_ss
+        timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        self.session_folder = os.path.join(self.storage_folder, f"session_{timestamp}")
         os.makedirs(self.session_folder)
 
         # queue for dumping transactions to storage in the background
@@ -132,7 +134,8 @@ class TransactionMiddleware:
             print(f"Failed to create transaction for command: {cmd}")
             return False
         
-        json_file_path = os.path.join(self.session_folder, f"{tid}_{transaction.start_date}.json")
+        timestamp_str = datetime.fromtimestamp(transaction.start_date).strftime("%Y_%m_%d-%H_%M_%S")
+        json_file_path = os.path.join(self.session_folder, f"{tid}_{timestamp_str}.json")
         self._enqueue_dump(transaction, json_file_path)
         
         print(f"Created transaction for command: {cmd} with tid {tid} and file path {file_path}")
