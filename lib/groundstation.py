@@ -18,6 +18,7 @@ from lib.telemetry.splat.splat.telemetry_codec import Ack, pack, unpack, Report,
 from lib.telemetry.splat.splat.telemetry_helper import format_bytes
 
 from lib.telemetry import transaction_middleware  # This is the class object that will deal with transactions
+from lib.telemetry import transaction_middleware  # This is the class object that will deal with transactions
 
 
 class GS:
@@ -30,6 +31,7 @@ class GS:
     # init the command interface gateway
     command_interface_gateway = CommandInterfaceGateway()
     command_interface_gateway.serve_in_thread()
+
 
     
 
@@ -136,9 +138,9 @@ class GS:
             # if command is related to transaction 
             # [check] - dont love doing it here, should think of a better arch
             if message_object.name == "INIT_TRANS":
-                self.transaction_middleware.process_init_trans(message_object)
+                transaction_middleware.process_init_trans(message_object)
         if type(message_object) == Fragment:
-            self.transaction_middleware.process_fragment(message_object)
+            transaction_middleware.process_fragment(message_object)
         if type(message_object) == Variable:
             print(f"\033[32mReceived variable: {message_object.name} from SAT ID {sat_id}\033[0m")
             self.gs_database.add_variable(message_object, sat_id)
@@ -155,7 +157,6 @@ class GS:
         GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
 
         command = self.command_interface_gateway.pop_command()
-        
         
         command_bytes = pack(command)
         header = bytes([69])  # header_from and header_to set to 255

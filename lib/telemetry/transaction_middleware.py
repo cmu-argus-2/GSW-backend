@@ -128,7 +128,27 @@ class TransactionMiddleware:
             print("Invalid command arguments for creating transaction")
             print(f"Received cmd_arguments: {cmd.arguments}")
             return False
+        
+        # check to see if tid already exists
+        # if it exists with the same file path, the sat has rebooted and I am creating the trans there again
+        # if it has a different file path, I will ignore it and not send the message
+        # [check] - it would be good in aci to show that this is the reason for failure
+        existing_transaction = self.transaction_manager.get_transaction(tid=tid, is_tx=False)
+        if existing_transaction is not None and existing_transaction.file_path != file_path:
+            # print in red
+            print(f"\033[91mTransaction with tid {tid} already exists with different file path: {existing_transaction.file_path}\033[0m")
+            print("   \033[91mPlease choose another tid\033[0m")
+            return False
 
+        if existing_transaction:
+            # The transaction already exists and file path match, dont need to create it but still need to send the message
+            #print in blue
+            print(f"\033[94mTransaction with tid {tid} already exists and file path matches: {file_path}\033[0m")
+            print("\033[94m" + "  Not creating the transaction, but still sending command to satellite" + "\033[0m")
+            return True
+        
+
+            
         transaction = self.transaction_manager.create_transaction(tid=tid, file_path=file_path, is_tx=False)
         if transaction is None:
             print(f"Failed to create transaction for command: {cmd}")
