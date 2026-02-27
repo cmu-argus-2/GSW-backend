@@ -17,7 +17,7 @@ from lib.database.database_backend import GSGateway   # this is comming in to re
 from lib.telemetry.splat.splat.telemetry_codec import Ack, pack, unpack, Report, Variable, Command, Fragment
 from lib.telemetry.splat.splat.telemetry_helper import format_bytes
 
-from lib.telemetry.transaction_middleware import TransactionMiddleware
+from lib.telemetry import transaction_middleware  # This is the class object that will deal with transactions
 
 
 class GS:
@@ -30,9 +30,7 @@ class GS:
     # init the command interface gateway
     command_interface_gateway = CommandInterfaceGateway()
     command_interface_gateway.serve_in_thread()
-    
-    # init the middle man responsible for handling the transaction related commands
-    transaction_middleware = TransactionMiddleware()
+
     
 
     # Initialize GPIO
@@ -158,11 +156,6 @@ class GS:
 
         command = self.command_interface_gateway.pop_command()
         
-        # check to see if command is CREATE_TRANS
-        # [check] - dont love doing it here, should think of a better arch
-        if command.name == "CREATE_TRANS":
-            # if it is then we need to pass it to the transaction middleware to handle the transaction related commands
-            self.transaction_middleware.process_create_trans(command)
         
         command_bytes = pack(command)
         header = bytes([69])  # header_from and header_to set to 255
