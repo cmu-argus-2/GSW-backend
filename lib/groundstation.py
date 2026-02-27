@@ -111,14 +111,21 @@ class GS:
         print(f"Processing packet from SAT ID {sat_id} with RSSI {msg_rx.rssi}")
         print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
 
+        header = data_bytes[0]
         data_bytes = data_bytes[1:]  # remove sat_id from the data bytes
 
-        message_object = unpack(data_bytes)
-
-        if message_object is None:
-            print(f"\033[31m[COMMS ERROR] Failed to unpack message from SAT ID {sat_id}\033[0m")
+        if header != 0x00:
+            print(f"\033[31m[COMMS ERROR] Invalid header {header} from SAT ID {sat_id}\033[0m")
+            print(f"Message bytes: {format_bytes(data_bytes)}")
             return
-        
+
+        try:
+            message_object = unpack(data_bytes)
+        except Exception as e:
+            # print in red taht failed to decode and print the error
+            print(f"\033[31m[COMMS ERROR] Failed to unpack message from SAT ID {sat_id}: {e}\033[0m")
+            return
+
         print(f"Decoded message object: {message_object}")
         
         if type(message_object) == Report:
