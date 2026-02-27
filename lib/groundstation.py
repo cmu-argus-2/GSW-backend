@@ -104,14 +104,32 @@ class GS:
         print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
         
         data_bytes = msg_rx.message
+        if not data_bytes:
+            print("\033[33m[COMMS WARN] Received empty payload from radio\033[0m")
+            return
         sat_id = data_bytes[0]
+        payload_bytes = data_bytes[1:]  # remove sat_id from the data bytes
 
-        data_bytes = data_bytes[1:]  # remove sat_id from the data bytes
-
-        message_object = unpack(data_bytes)
+        try:
+            message_object = unpack(payload_bytes)
+        except Exception as e:
+            print(
+                f"\033[33m[COMMS WARN] Could not decode packet from SAT ID {sat_id}: {e}\033[0m"
+            )
+            self.gs_database.add_raw_packet(
+                sat_id=sat_id,
+                payload_bytes=payload_bytes,
+                reason=f"decode_error:{type(e).__name__}",
+            )
+            return
 
         if message_object is None:
             print(f"\033[31m[COMMS ERROR] Failed to unpack message from SAT ID {sat_id}\033[0m")
+            self.gs_database.add_raw_packet(
+                sat_id=sat_id,
+                payload_bytes=payload_bytes,
+                reason="unpack_returned_none",
+            )
             return
         
         if type(message_object) == Report:

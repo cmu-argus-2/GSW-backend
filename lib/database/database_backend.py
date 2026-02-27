@@ -103,6 +103,36 @@ class GSGateway:
         }
         
         self._send_tm_to_database(variable_dict)
+
+    def add_raw_packet(self, sat_id, payload_bytes, reason="unparsed"):
+        """
+        Persist raw packets that cannot be decoded by Argus telemetry codec.
+        Keeps relay/digipeater traffic from being dropped on the floor.
+        """
+        try:
+            storage_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+            os.makedirs(storage_dir, exist_ok=True)
+            storage_path = os.path.join(storage_dir, "raw_packets.jsonl")
+
+            record = {
+                "timestamp": int(time.time()),
+                "sat_id": int(sat_id),
+                "reason": str(reason),
+                "payload_hex": payload_bytes.hex(),
+                "payload_len": len(payload_bytes),
+            }
+
+            with open(storage_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
+
+            logger.info(
+                "Stored raw packet for sat_id=%s len=%s reason=%s",
+                sat_id,
+                len(payload_bytes),
+                reason,
+            )
+        except Exception as e:
+            logger.error("Failed to store raw packet: %s", e)
         
         
     # -------------------------------------------------------------------------
