@@ -1,3 +1,6 @@
 {"timestamp": 1772171101, "sat_id": 0, "reason": "decode_error:ValueError", "payload_hex": "a654b0fd2be96ab2b67c4d4991a495d5515bff42ccca357498f21d7b094fd452fcfb176b401903", "payload_len": 39}
 {"timestamp": 1772171172, "sat_id": 0, "reason": "decode_error:ValueError", "payload_hex": "a6eefac5198057f80852fce63181ea0a1aac800187b83b112cb779b8a1b1659d3c5bdede4007", "payload_len": 38}
 {"timestamp": 1772171223, "sat_id": 0, "reason": "decode_error:ValueError", "payload_hex": "2160e7fe938ee5fb1489978b70115233c949cff307646dd379e572a9290586d5cd0bb2294000", "payload_len": 38}
+{"timestamp": 1772231961, "sat_id": 0, "reason": "decode_error:KeyError", "payload_hex": "3f40de1611242fe2f9b7a0a31cd35ad75292eb496f8f25d95409474313b3a0be60221bbc4007", "payload_len": 38}
+{"timestamp": 1772232016, "sat_id": 0, "reason": "decode_error:ValueError", "payload_hex": "41408159d0fefafed231865dc5cd8f21ceccf76a974e24847b4f131576f1dad28a4905ec4017", "payload_len": 38}
+{"timestamp": 1772232061, "sat_id": 0, "reason": "decode_error:ValueError", "payload_hex": "f5ce803cab944efbb5025f8207c83567cd8be1acd653e08ed366faac0000f0f6d0f438b84000", "payload_len": 38}
