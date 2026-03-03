@@ -214,18 +214,6 @@ class LoRa(object):
 
         return True
 
-    def send_to_wait(self, data, header_to=None, header_flags=0, retries=3):
-        self._last_header_id += 1
-
-        for _ in range(retries + 1):
-            self.send(data)
-            self.set_mode_rx()
-            return True
-
-    def send_ack(self, header_to=None, header_id=None):
-        self.send(b"!")
-        self.wait_packet_sent()
-
     def _spi_write(self, register, payload):
         if isinstance(payload, int):
             payload = [payload]
