@@ -6,7 +6,7 @@ from lib.config import ARGUS_FREQ
 
 def initialize_radio() -> RadioHead:
     CHANNEL = 0
-    INTERRUPT = 19
+    INTERRUPT = 19    # this is the interupt pin
     ADDRESS = 255
     FREQUENCY = ARGUS_FREQ
     TX_POWER = 23

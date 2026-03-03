@@ -33,20 +33,6 @@ class GS:
     command_interface_gateway.serve_in_thread()
 
 
-    
-
-    # Initialize GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(22, GPIO.OUT)  # RX control pin
-    GPIO.setup(23, GPIO.OUT)  # TX control pin
-
-    rx_ctrl = 22  # GPIO pin number for rx_ctrl
-    tx_ctrl = 23  # GPIO pin number for tx_ctrl
-
-    # Ensure pins are off initially
-    GPIO.output(rx_ctrl, GPIO.LOW)
-    GPIO.output(tx_ctrl, GPIO.LOW)
-
     @classmethod
     def set_rx_mode(self):
         """
@@ -154,8 +140,6 @@ class GS:
         transmit the latest command in the command queue
         """
 
-        GPIO.output(self.tx_ctrl, GPIO.HIGH)  # Turn TX on
-
         command = self.command_interface_gateway.pop_command()
         
         command_bytes = pack(command)
@@ -174,4 +158,3 @@ class GS:
         self.radiohead.send_message(command_bytes, 255, 1)
 
         print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
-        GPIO.output(self.tx_ctrl, GPIO.LOW)  # Turn TX off

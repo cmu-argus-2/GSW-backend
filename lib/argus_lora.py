@@ -61,7 +61,7 @@ class LoRa(object):
 
         # Setup the module
         btn = Button(self._interrupt, pull_up=False)
-        btn.when_pressed = self._handle_interrupt
+        btn.when_pressed = self._handle_interrupt    # we are treating the interupt pin as a button
 
         self.spi = spidev.SpiDev()
         self.spi.open(0, self._channel)
