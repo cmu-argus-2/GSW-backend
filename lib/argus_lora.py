@@ -58,6 +58,9 @@ class LoRa(object):
         self.retry_timeout = 0.2
 
         self.crc_error_count = 0
+        
+        self.receive_success = False
+        self.last_payload = None
 
         # Setup the module
         btn = Button(self._interrupt, pull_up=False)
@@ -114,10 +117,10 @@ class LoRa(object):
         # CRC Enable
         self.enable_crc = True
 
-    def on_recv(self, message):
+    def on_recv(self, payload):
         # This should be overridden by the user
-        print("Message received!")
-        pass
+        self.receive_success = True
+        self.last_payload = payload
 
     def sleep(self):
         if self._mode != Definitions.MODE_SLEEP:

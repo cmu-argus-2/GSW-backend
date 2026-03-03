@@ -1,10 +1,9 @@
 from lib.argus_lora import LoRa, ModemConfig
-from lib.radiohead import RadioHead
 
 from lib.config import ARGUS_FREQ
 
 
-def initialize_radio() -> RadioHead:
+def initialize_radio() -> LoRa:
     CHANNEL = 0
     INTERRUPT = 19    # this is the interupt pin
     ADDRESS = 255
@@ -27,7 +26,5 @@ def initialize_radio() -> RadioHead:
         acks=ACKS,
         crypto=CRYTPO,
     )
-
-    # RadioHead wrapper class that overwrites on_recv and adds a receive method
-    radiohead = RadioHead(radio, 15)
-    return radiohead
+    
+    return radio

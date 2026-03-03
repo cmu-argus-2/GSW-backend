@@ -23,7 +23,7 @@ from lib.telemetry import transaction_middleware  # This is the class object tha
 
 class GS:
     # Radio abstraction for GS
-    radiohead = initialize_radio()
+    radio = initialize_radio()
     
     # init the database gateway
     gs_database = GSGateway()
@@ -36,10 +36,10 @@ class GS:
     @classmethod
     def set_rx_mode(self):
         """
-        set radiohead lib to rx mode
+        set radio to rx mode
         """
-        self.radiohead.radio.set_mode_rx()
-        self.radiohead.receive_success = False
+        self.radio.set_mode_rx()
+        self.radio.receive_success = False
     
     @classmethod
     def check_tx_cmd_available(self):
@@ -55,10 +55,10 @@ class GS:
     @classmethod
     def check_rx_packet_available(self):
         """
-        Use the radiohead lib to check if a new packet is available
+        Use the radio to check if a new packet is available
         """
         
-        if self.radiohead.receive_success == False:
+        if self.radio.receive_success == False:
             # no new packets
             return False
         
@@ -67,17 +67,17 @@ class GS:
     @classmethod
     def get_rx_packet(self):
         """
-        Use the radiohead lib to get the latest packet
+        Use the radio to get the latest packet
         """
         
-        if self.radiohead.receive_success == False:
+        if self.radio.receive_success == False:
             # no new packets
             print("Expected new packet, but not available")
             return None
         
-        rx_obj = self.radiohead.last_payload
+        rx_obj = self.radio.last_payload
         
-        self.radiohead.receive_success = False  # reset for next packet
+        self.radio.receive_success = False  # reset for next packet
         
         return rx_obj
     
@@ -86,7 +86,7 @@ class GS:
         """
         Will process the latest received packet
         
-        msg_rx is self.radiohead.last_payload 
+        msg_rx is self.radio.last_payload 
 
         decode it and add it to the database
         """
@@ -155,6 +155,7 @@ class GS:
         command_bytes = header + command_bytes
         
         # header_from and header_to set to 255
-        self.radiohead.send_message(command_bytes, 255, 1)
+        # Using send() method directly (with_ack=True equivalent)
+        self.radio.send(command_bytes, 255, 0, 0)
 
         print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
