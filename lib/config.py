@@ -44,6 +44,11 @@ INGEST_GATEWAY_PORT = 5555
 
 ARGUS_FREQ = 433.707  # MHz
 
+# ============================================================
+# Satellite config
+# ============================================================
+
+CALLSIGN = "CT6xxx"
 
 # ============================================================
 # Pretty Print Configuration
@@ -73,5 +78,8 @@ print(f"  Port              : {INGEST_GATEWAY_PORT}")
 
 print("\n[Radio]")
 print(f"  ARGUS Frequency   : {ARGUS_FREQ:.3f} MHz")
+
+print("\n[Satellite]")
+print(f"  Callsign          : {CALLSIGN}")
 
 print("=" * 55 + "\n")

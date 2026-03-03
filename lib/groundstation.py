@@ -8,7 +8,7 @@ import lib.config as config
 
 from lib.radio_utils import initialize_radio
 
-from lib.config import AUTH_KEY
+from lib.config import AUTH_KEY, CALLSIGN
 from lib.auth.command_auth import compute_mac, get_next_nonce
 
 from lib.command_interface.command_interface import CommandInterfaceGateway
@@ -106,34 +106,26 @@ class GS:
         """
         
         data_bytes = msg_rx.message
-        sat_id = data_bytes[0]
-        
-        print(f"Processing packet from SAT ID {sat_id} with RSSI {msg_rx.rssi}")
-        print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
-
-        header = data_bytes[0]
-        data_bytes = data_bytes[1:]  # remove sat_id from the data bytes
-
-        if header != 0x00:
-            print(f"\033[31m[COMMS ERROR] Invalid header {header} from SAT ID {sat_id}\033[0m")
-            print(f"Message bytes: {format_bytes(data_bytes)}")
-            return
-
+ 
         try:
-            message_object = unpack(data_bytes)
+            callsign, message_object = unpack(data_bytes)
         except Exception as e:
             # print in red taht failed to decode and print the error
-            print(f"\033[31m[COMMS ERROR] Failed to unpack message from SAT ID {sat_id}: {e}\033[0m")
+            print(f"\033[31m[COMMS ERROR] Failed to unpack message: {e}\033[0m")
+            # print in red formated bytes
+            print(f"\033[31mRaw message bytes: {format_bytes(msg_rx.message)}\033[0m")
             return
 
+        print(f"\033[35mFrom SAT: {callsign}\033[0m")
+        print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
         print(f"Decoded message object: {message_object}")
         
         if type(message_object) == Report:
-            print(f"\033[32mReceived report: {message_object.name} from SAT ID {sat_id}\033[0m")
-            self.gs_database.add_report(message_object, sat_id)
+            print(f"\033[32mReport: {message_object.name}\033[0m")
+            self.gs_database.add_report(message_object, callsign)
         if type(message_object) == Command:
-            print(f"\033[32mReceived command: {message_object.name} from SAT ID {sat_id}\033[0m")
-            self.gs_database.add_command(message_object, sat_id)
+            print(f"\033[32mCommand: {message_object.name}\033[0m")
+            self.gs_database.add_command(message_object, callsign)
             
             # if command is related to transaction 
             # [check] - dont love doing it here, should think of a better arch
@@ -142,10 +134,10 @@ class GS:
         if type(message_object) == Fragment:
             transaction_middleware.process_fragment(message_object)
         if type(message_object) == Variable:
-            print(f"\033[32mReceived variable: {message_object.name} from SAT ID {sat_id}\033[0m")
-            self.gs_database.add_variable(message_object, sat_id)
+            print(f"\033[32mVariable: {message_object.name}\033[0m")
+            self.gs_database.add_variable(message_object, callsign)
         if type(message_object) == Ack:
-            print(f"\033[32mReceived Ack: {message_object} from SAT ID {sat_id}\033[0m\n")
+            print(f"\033[32mAck: {message_object}\033[0m\n")
             # should send this to the command interface
 
     @classmethod
@@ -158,8 +150,7 @@ class GS:
 
         command = self.command_interface_gateway.pop_command()
         
-        command_bytes = pack(command)
-        header = bytes([69])  # header_from and header_to set to 255
+        command_bytes = pack(command, CALLSIGN)
         
         if AUTH_KEY is not None:
             # means that we want to encrypt the data
@@ -168,7 +159,7 @@ class GS:
             command_bytes = nonce + mac + command_bytes   # add teh encryption info to the command
         
         
-        command_bytes = header + command_bytes
+        command_bytes = command_bytes
         
         # header_from and header_to set to 255
         self.radiohead.send_message(command_bytes, 255, 1)
