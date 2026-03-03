@@ -48,7 +48,8 @@ ARGUS_FREQ = 433.707  # MHz
 # Satellite config
 # ============================================================
 
-CALLSIGN = "CT6xxx"
+SC_CALLSIGN = "CT6xxx"
+GS_CALLSIGN = "CSXXXX"
 
 # ============================================================
 # Pretty Print Configuration
@@ -80,6 +81,7 @@ print("\n[Radio]")
 print(f"  ARGUS Frequency   : {ARGUS_FREQ:.3f} MHz")
 
 print("\n[Satellite]")
-print(f"  Callsign          : {CALLSIGN}")
+print(f"  GS          : {GS_CALLSIGN}")
+print(f"  SC          : {SC_CALLSIGN}")
 
 print("=" * 55 + "\n")

@@ -8,7 +8,7 @@ import lib.config as config
 
 from lib.radio_utils import initialize_radio
 
-from lib.config import AUTH_KEY, CALLSIGN
+from lib.config import AUTH_KEY, SC_CALLSIGN, GS_CALLSIGN
 from lib.auth.command_auth import compute_mac, get_next_nonce
 
 from lib.command_interface.command_interface import CommandInterfaceGateway
@@ -150,7 +150,7 @@ class GS:
 
         command = self.command_interface_gateway.pop_command()
         
-        command_bytes = pack(command, CALLSIGN)
+        command_bytes = pack(command, GS_CALLSIGN)
         
         if AUTH_KEY is not None:
             # means that we want to encrypt the data
