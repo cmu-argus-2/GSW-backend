@@ -64,12 +64,12 @@ class GSGateway:
     # Entry point for satellite packets
     # -------------------------------------------------------------------------
     
-    def add_report(self, report, sat_id):
+    def add_report(self, report, callsign):
         """
         Will add a report to the database
         this report is the object defined in telemetry codec
 
-        [check] - should add here the sat_id somehow
+        [check] - should add here the callsign somehow
         """
         
         # check the type
@@ -86,7 +86,7 @@ class GSGateway:
         
         self._send_tm_to_database(report.variables)
         
-    def add_variable(self, variable, sat_id):
+    def add_variable(self, variable, callsign):
         """
         Will add variable to the database
         want to build a dict that has
@@ -107,7 +107,7 @@ class GSGateway:
         self._send_tm_to_database(variable_dict)
   
         
-    def add_command(self, command, sat_id):
+    def add_command(self, command, callsign):
         """
         Right now this function will be made to deal with the transport layer 
         it will process the commands related to the transport layers and once we have the complete file
