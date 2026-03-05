@@ -7,6 +7,7 @@ it will used xmlrpc to send the commands
 """
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
 from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT
+from lib.telemetry import transaction_middleware
 
 from collections import deque
 import threading
@@ -37,7 +38,27 @@ class CommandInterfaceGateway:
         self.server.register_function(self.add_command, "add_command")   # this is the command that will be  called to add command
         self.server.register_function(self.ping, "ping")    # this is the command that command interface will call to see if the server is available
         self.server.register_function(self.add, "add")      # this is just a test command
+        
+        
+    # -------------------------------------------------------------------------
+    #
+    #      These are the commands for transaction
+    #
+    #-------------------------------------------------------------------------
+    
+    def create_trans(self, command):
+        """
+        Function that will be called when aci send create trans function
+        this will server to deal with the failure of creating the trans
+        
+        the logic to see if should create the trans or not is in transaction middleware
+        this just serves as a function to call it
 
+        
+        [check] - need to change this. Including the gs here just for this is a terrible idea
+        """
+        
+        return transaction_middleware.process_create_trans(command)
     
     # -------------------------------------------------------------------------
     #
@@ -64,6 +85,13 @@ class CommandInterfaceGateway:
                 
         for arg_name, arg_value in cmd_args.items():
             commnad.add_argument(arg_name, arg_value)
+            
+        # check to see if command is create_trans
+        if cmd_name == "CREATE_TRANS":
+            if not self.create_trans(commnad):
+                # means that creating the transaction failed and I do not want to send the message
+                return False
+                
 
         self.command_queue.append(commnad)
         print(f"Added command to queue: {commnad}")

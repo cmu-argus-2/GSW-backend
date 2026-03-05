@@ -24,7 +24,7 @@ MODE = "DBG"  # Options: DBG (debug), PROD (production), etc.
 # Command authentication key (expected: 32 hex characters)
 AUTH_KEY = os.getenv("AUTH_KEY")
 if AUTH_KEY is None:
-    raise ValueError("AUTH_KEY is not set")
+    print("[ERROR] - No key provided, running without authentication")
 
 
 # ============================================================
@@ -42,7 +42,7 @@ INGEST_GATEWAY_PORT = 5555
 # Radio Configuration
 # ============================================================
 
-ARGUS_FREQ = 433.707  # MHz
+ARGUS_FREQ = 435  # MHz
 
 
 # ============================================================

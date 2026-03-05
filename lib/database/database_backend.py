@@ -24,6 +24,8 @@ from lib.database.ingest_gateway import Ingest
 
 from lib.telemetry.splat.splat.telemetry_codec import Report, Variable, Command
 
+from lib.telemetry.splat.splat.transport_layer import Transaction, transaction_manager
+
 
 # -----------------------------------------------------------------------------
 # Logging
@@ -103,6 +105,26 @@ class GSGateway:
         }
         
         self._send_tm_to_database(variable_dict)
+  
+        
+    def add_command(self, command, sat_id):
+        """
+        Right now this function will be made to deal with the transport layer 
+        it will process the commands related to the transport layers and once we have the complete file
+        it will put the file on a folder
+
+        [check] - maybe should add the command to the database, but will figure that out later
+        
+        """
+        
+        # check the type
+        if command.__class__.__name__ != 'Command':
+            print(f"Invalid command type: {type(command)}")
+            return
+        
+        pass
+            
+
         
         
     # -------------------------------------------------------------------------
@@ -115,3 +137,4 @@ class GSGateway:
             print()
         except Exception as e:
             print(f"Failed sending telemetry to DB: {e}")
+

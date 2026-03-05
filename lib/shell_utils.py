@@ -9,10 +9,10 @@ import RPi.GPIO as GPIO
 from lib.groundstation import GS
 
 
-def hard_exit(radiohead, signum, frame):
+def hard_exit(radio, signum, frame):
     print()
     print("Received SIGINT: Hard exit")
-    radiohead.radio.close()
+    radio.close()
     GPIO.cleanup()
     sys.exit(0)
 
@@ -31,7 +31,7 @@ def op_mode():
     
     signal.signal(
         signal.SIGINT,
-        lambda signum, frame: hard_exit(GS.radiohead, signum, frame),
+        lambda signum, frame: hard_exit(GS.radio, signum, frame),
     )
 
     lastPrint = time.time()
