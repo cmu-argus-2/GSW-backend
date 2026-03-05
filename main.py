@@ -1,11 +1,8 @@
-import sys
-
-from scripts.remote_update import run_remote_update
-run_remote_update()
+kimport sys
 
 
 from lib.shell_utils import op_mode
-op_mode()
+
 
 while True:
     connection_prompt = """
