@@ -1,8 +1,11 @@
 import sys
 
+from scripts.remote_update import run_remote_update
+run_remote_update()
+
 
 from lib.shell_utils import op_mode
-
+op_mode()
 
 while True:
     connection_prompt = """
@@ -19,3 +22,4 @@ Input: """
     }
 
     options[conn_type]()
+
