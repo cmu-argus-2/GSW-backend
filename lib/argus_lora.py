@@ -58,10 +58,13 @@ class LoRa(object):
         self.retry_timeout = 0.2
 
         self.crc_error_count = 0
+        
+        self.receive_success = False
+        self.last_payload = None
 
         # Setup the module
         btn = Button(self._interrupt, pull_up=False)
-        btn.when_pressed = self._handle_interrupt
+        btn.when_pressed = self._handle_interrupt    # we are treating the interupt pin as a button
 
         self.spi = spidev.SpiDev()
         self.spi.open(0, self._channel)
@@ -114,10 +117,10 @@ class LoRa(object):
         # CRC Enable
         self.enable_crc = True
 
-    def on_recv(self, message):
+    def on_recv(self, payload):
         # This should be overridden by the user
-        print("Message received!")
-        pass
+        self.receive_success = True
+        self.last_payload = payload
 
     def sleep(self):
         if self._mode != Definitions.MODE_SLEEP:
@@ -210,18 +213,6 @@ class LoRa(object):
         self.set_mode_tx()
 
         return True
-
-    def send_to_wait(self, data, header_to=None, header_flags=0, retries=3):
-        self._last_header_id += 1
-
-        for _ in range(retries + 1):
-            self.send(data)
-            self.set_mode_rx()
-            return True
-
-    def send_ack(self, header_to=None, header_id=None):
-        self.send(b"!")
-        self.wait_packet_sent()
 
     def _spi_write(self, register, payload):
         if isinstance(payload, int):
