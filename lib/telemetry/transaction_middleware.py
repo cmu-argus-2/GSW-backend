@@ -14,7 +14,7 @@ of data from the Satellite. So there will be a thread that will be responsible f
 
 import pickle
 import json
-from lib.telemetry.splat.splat.transport_layer import TransactionManager, Fragment, Command
+from lib.telemetry.splat.splat.transport_layer import TransactionManager, Fragment
 import os
 import time
 import threading
