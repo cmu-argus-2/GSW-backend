@@ -9,7 +9,7 @@ while True:
 What operation mode do you want?
 (o) Operations Mode 
 (q) quit   
-Input: """
+Input:  """
     conn_type = input(connection_prompt)
     if conn_type == "q":
         sys.exit(0)

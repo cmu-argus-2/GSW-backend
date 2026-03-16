@@ -8,7 +8,7 @@ The configuration is primarily controlled via environment variables
 (e.g., AUTH_KEY) and static defaults defined below.
 """
 
-import os
+import os, argparse
 
 # ============================================================
 # Runtime Mode
@@ -28,6 +28,22 @@ if AUTH_KEY is None:
 
 
 # ============================================================
+# Ground Station Configuration
+# ============================================================
+"""
+Ground station 1 and 2 are configured differently. 
+Defaults GS=1, the original ARGUS module.
+GS=2 is an adapted station. 
+"""
+parser = argparse.ArgumentParser()
+parser.add_argument("--gs", default=1, help="choose ground station 1 or 2 (default=1).", type=int)
+args = parser.parse_args()
+GS = args.gs
+GS_CHANNEL = 1 if GS == 2 else 0
+GS_INTERRUPT = 23 if GS == 2 else 19
+
+
+# ============================================================
 # Network Configuration
 # ============================================================
 
@@ -42,7 +58,7 @@ INGEST_GATEWAY_PORT = 5555
 # Radio Configuration
 # ============================================================
 
-ARGUS_FREQ = 435  # MHz
+ARGUS_FREQ = 433.707  # MHz
 
 # ============================================================
 # Satellite config
@@ -68,6 +84,7 @@ print("=" * 55)
 
 print(f"Mode                : {MODE}")
 print(f"Auth Key            : {_mask_key(AUTH_KEY)}")
+print(f"Ground Station No.  : {GS}")
 
 print("\n[Command Interface]")
 print(f"  Address           : {COMMAND_INTERFACE_IP}")
