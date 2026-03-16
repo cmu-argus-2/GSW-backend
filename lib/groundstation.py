@@ -19,6 +19,7 @@ from lib.telemetry.splat.splat.telemetry_helper import format_bytes
 
 from lib.telemetry import transaction_middleware  # This is the class object that will deal with transactions
 from lib.telemetry import transaction_middleware  # This is the class object that will deal with transactions
+from lib.session_logger import get_session_logger
 
 
 class GS:
@@ -31,6 +32,8 @@ class GS:
     # init the command interface gateway
     command_interface_gateway = CommandInterfaceGateway()
     command_interface_gateway.serve_in_thread()
+
+    session_logger = get_session_logger("groundstation.session")
 
 
     @classmethod
@@ -80,6 +83,36 @@ class GS:
         self.radio.receive_success = False  # reset for next packet
         
         return rx_obj
+
+    @classmethod
+    def _extract_decoded_values(self, message_object):
+        if type(message_object) == Report:
+            return message_object.variables
+
+        if type(message_object) == Command:
+            return message_object.arguments
+
+        if type(message_object) == Variable:
+            return {
+                "name": message_object.name,
+                "subsystem": message_object.subsystem,
+                "value": message_object.value,
+            }
+
+        if type(message_object) == Fragment:
+            return {
+                "tid": message_object.tid,
+                "seq_number": message_object.seq_number,
+                "payload_size": len(message_object.payload) if message_object.payload is not None else 0,
+            }
+
+        if type(message_object) == Ack:
+            return {
+                "response_status": message_object.response_status,
+                "ack_args": message_object.ack_args,
+            }
+
+        return str(message_object)
     
     @classmethod
     def process_rx_packet(self, msg_rx):
@@ -100,11 +133,23 @@ class GS:
             print(f"\033[31m[COMMS ERROR] Failed to unpack message: {e}\033[0m")
             # print in red formated bytes
             print(f"\033[31mRaw message bytes: {format_bytes(msg_rx.message)}\033[0m")
+            self.session_logger.info(
+                f"event=sat_received source_callsign=unknown message_type=unknown success=False "
+                f"payload_bytes={len(data_bytes)} raw={format_bytes(msg_rx.message)} error={e}"
+            )
             return
 
         print(f"\033[35mFrom SAT: {callsign}\033[0m")
         print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
         print(f"Decoded message object: {message_object}")
+
+        message_type = type(message_object).__name__
+        message_name = getattr(message_object, "name", "")
+        decoded_values = self._extract_decoded_values(message_object)
+        self.session_logger.info(
+            f"event=sat_received source_callsign={callsign} message_type={message_type} "
+            f"message_name={message_name} decoded_values={decoded_values} success=True payload_bytes={len(data_bytes)}"
+        )
         
         if type(message_object) == Report:
             print(f"\033[32mReport: {message_object.name}\033[0m")
@@ -133,6 +178,8 @@ class GS:
         """
 
         command = self.command_interface_gateway.pop_command()
+        if command is None:
+            return
         
         command_bytes = pack(command, GS_CALLSIGN)
         
@@ -147,6 +194,19 @@ class GS:
         
         # header_from and header_to set to 255
         # Using send() method directly (with_ack=True equivalent)
-        self.radio.send(command_bytes, 255, 0, 0)
+        try:
+            self.radio.send(command_bytes, 255, 0, 0)
+            self.session_logger.info(
+                f"event=cmd_tx cmd={command.name} args={command.arguments} "
+                f"sender_ip={getattr(command, 'sender_ip', 'unknown')} "
+                f"success=True payload_bytes={len(command_bytes)}"
+            )
+        except Exception as e:
+            self.session_logger.info(
+                f"event=cmd_tx cmd={command.name} args={command.arguments} "
+                f"sender_ip={getattr(command, 'sender_ip', 'unknown')} "
+                f"success=False payload_bytes={len(command_bytes)} error={e}"
+            )
+            raise
 
         print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
