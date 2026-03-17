@@ -5,7 +5,17 @@ it is made using flask. The backend will call functions implemented here to send
 
 it will used xmlrpc to send the commands
 """
+import os
+import sys
+
+if __name__ == "__main__" and __package__ is None:
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
+from lib.telemetry.splat.splat.telemetry_definition import command_list, argument_dict, COMMAND_IDS
+from lib.telemetry.splat.splat.telemetry_helper import get_command_size
 from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT
 from lib.telemetry import transaction_middleware
 
@@ -38,6 +48,7 @@ class CommandInterfaceGateway:
         self.server.register_function(self.add_command, "add_command")   # this is the command that will be  called to add command
         self.server.register_function(self.ping, "ping")    # this is the command that command interface will call to see if the server is available
         self.server.register_function(self.add, "add")      # this is just a test command
+        self.server.register_function(self.get_command_definitions, "get_command_definitions") # this is the command that will be called to get the command definitions. It will return a list of command names that can be called
         
         
     # -------------------------------------------------------------------------
@@ -66,6 +77,35 @@ class CommandInterfaceGateway:
     #
     #-------------------------------------------------------------------------
     
+    def get_command_definitions(self):
+        """
+        This is the function that will return the available command
+        this command will be used to avoid needing to have splat in aci
+
+            
+            
+            
+        """
+        definitions = []
+
+        for cmd_name, precondition, arguments, _ in command_list:
+            command_info = {
+                "name": cmd_name,
+                "id": COMMAND_IDS[cmd_name],
+                "size": get_command_size(cmd_name),
+                "precondition": precondition if precondition is not None else "",
+                "arguments": [
+                    {
+                        "name": arg_name,
+                        "type": argument_dict[arg_name],
+                    }
+                    for arg_name in arguments
+                ],
+            }
+            definitions.append(command_info)
+
+        return definitions
+        
     def add_command(self, cmd_name, cmd_args):
         """
         This is the function that will be called to add a command
@@ -177,4 +217,19 @@ class CommandInterfaceGateway:
         it will return the number of commands in the queue
         """
         return len(self.command_queue)
+
+
+def main():
+    gateway = CommandInterfaceGateway()
+
+    try:
+        gateway.thread_running = True
+        gateway.serve_forever()
+    except KeyboardInterrupt:
+        gateway.thread_running = False
+        print("Stopping Command Interface Gateway...")
+
+
+if __name__ == "__main__":
+    main()
     
