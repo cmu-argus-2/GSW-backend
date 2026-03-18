@@ -24,7 +24,9 @@ MODE = "DBG"  # Options: DBG (debug), PROD (production), etc.
 # Command authentication key (expected: 32 hex characters)
 AUTH_KEY = os.getenv("AUTH_KEY")
 if AUTH_KEY is None:
-    print("[ERROR] - No key provided, running without authentication")
+    print("[ERROR] - No key provided, using default key")
+    AUTH_KEY = "d6172b38acb7d2a28e21662f689d1d15ad78ccc888a9c7a78ef58cb61b0f1e32"
+    
 
 
 # ============================================================
