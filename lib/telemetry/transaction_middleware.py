@@ -166,7 +166,7 @@ class TransactionMiddleware:
         """
         After gs sending CREATE_TRANS command, the satellite will respond with a INIT command containing more information
         about the transaction. This function will deal with that.
-        The extra information provided is the hash and the number of packets.
+        The extra information provided is the number of packets.
         """
         
         if not isinstance(cmd, Command):
