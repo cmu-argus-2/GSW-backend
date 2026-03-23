@@ -1,4 +1,4 @@
-import sys
+kimport sys
 
 
 from lib.shell_utils import op_mode
@@ -19,3 +19,4 @@ Input:  """
     }
 
     options[conn_type]()
+

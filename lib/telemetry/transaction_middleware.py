@@ -14,7 +14,8 @@ of data from the Satellite. So there will be a thread that will be responsible f
 
 import pickle
 import json
-from lib.telemetry.splat.splat.transport_layer import TransactionManager, Fragment, Command
+from lib.telemetry.splat.splat.transport_layer import TransactionManager, Fragment
+from lib.telemetry.splat.splat.telemetry_codec import Command
 import os
 import time
 import threading
@@ -165,7 +166,7 @@ class TransactionMiddleware:
         """
         After gs sending CREATE_TRANS command, the satellite will respond with a INIT command containing more information
         about the transaction. This function will deal with that.
-        The extra information provided is the hash and the number of packets.
+        The extra information provided is the number of packets.
         """
         
         if not isinstance(cmd, Command):
