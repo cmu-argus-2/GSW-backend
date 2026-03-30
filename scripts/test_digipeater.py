@@ -182,7 +182,7 @@ def main():
 
                 via_entries = addresses[2:]
                 sat_in_path = any(
-                    a["callsign"].strip() == SC_CALLSIGN.strip() and a["h_bit"]
+                    a["callsign"].strip().upper() == SC_CALLSIGN.strip().upper() and a["h_bit"]
                     for a in via_entries
                 )
 
