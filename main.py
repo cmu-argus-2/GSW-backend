@@ -1,4 +1,4 @@
-kimport sys
+import sys
 
 
 from lib.shell_utils import op_mode
