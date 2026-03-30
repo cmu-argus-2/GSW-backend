@@ -124,7 +124,7 @@ class GS:
             self.gs_database.add_variable(message_object, callsign)
         if type(message_object) == Ack:
             print(f"\033[32mAck: {message_object}\033[0m\n")
-            # should send this to the command interface
+            self.command_interface_gateway.push_ack(message_object.response_status)
 
     @classmethod
     def transmit_message(self):
