@@ -1,11 +1,11 @@
 from lib.argus_lora import LoRa, ModemConfig
 
-from lib.config import ARGUS_FREQ
+from lib.config import ARGUS_FREQ, GS_CHANNEL, GS_INTERRUPT
 
 
 def initialize_radio() -> LoRa:
-    CHANNEL = 0
-    INTERRUPT = 19    # this is the interupt pin
+    CHANNEL = GS_CHANNEL
+    INTERRUPT = GS_INTERRUPT    # this is the interupt pin
     ADDRESS = 255
     FREQUENCY = ARGUS_FREQ
     TX_POWER = 23
