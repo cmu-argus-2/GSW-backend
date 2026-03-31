@@ -44,6 +44,8 @@ class CommandInterfaceGateway:
         self.command_queue = deque()
         self.ack_queue = deque(maxlen=20)
         self.ack_lock = threading.Lock()
+        self.rx_packet_queue = deque(maxlen=200)
+        self.rx_packet_lock = threading.Lock()
 
         self.thread_running = False
 
@@ -54,6 +56,7 @@ class CommandInterfaceGateway:
         self.server.register_function(self.get_command_definitions, "get_command_definitions") # this is the command that will be called to get the command definitions. It will return a list of command names that can be called
         self.server.register_function(self.get_pending_ack, "get_pending_ack")
         self.server.register_function(self.get_transaction_status, "get_transaction_status")
+        self.server.register_function(self.get_new_packets, "get_new_packets")
         
         
     # -------------------------------------------------------------------------
@@ -80,6 +83,18 @@ class CommandInterfaceGateway:
         """Called in-process by groundstation when an Ack packet is received from the satellite."""
         with self.ack_lock:
             self.ack_queue.append({'rid': response_status, 'ts': time.time()})
+
+    def push_received_packet(self, packet_dict):
+        """Called in-process by groundstation to queue a decoded packet for the frontend."""
+        with self.rx_packet_lock:
+            self.rx_packet_queue.append(packet_dict)
+
+    def get_new_packets(self):
+        """RPC: Drain and return all queued decoded packets since the last call."""
+        with self.rx_packet_lock:
+            packets = list(self.rx_packet_queue)
+            self.rx_packet_queue.clear()
+            return packets
 
     def get_pending_ack(self):
         """RPC: Pop and return the oldest pending ACK, or None if the queue is empty."""

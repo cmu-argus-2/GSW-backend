@@ -106,25 +106,55 @@ class GS:
         print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
         print(f"Decoded message object: {message_object}")
         
+        ts = datetime.datetime.now().strftime('%H:%M:%S')
+
         if type(message_object) == Report:
             print(f"\033[32mReport: {message_object.name}\033[0m")
             self.gs_database.add_report(message_object, callsign)
+            flat_vars = {var_name: str(value)
+                         for ss_dict in message_object.variables.values()
+                         for var_name, value in ss_dict.items()}
+            self.command_interface_gateway.push_received_packet({
+                'type': 'Report', 'name': message_object.name,
+                'variables': flat_vars, 'callsign': callsign, 'ts': ts
+            })
         if type(message_object) == Command:
             print(f"\033[32mCommand: {message_object.name}\033[0m")
             self.gs_database.add_command(message_object, callsign)
-            
-            # if command is related to transaction 
-            # [check] - dont love doing it here, should think of a better arch
             if message_object.name == "INIT_TRANS":
                 transaction_middleware.process_init_trans(message_object)
+            self.command_interface_gateway.push_received_packet({
+                'type': 'Command', 'name': message_object.name,
+                'arguments': {k: str(v) for k, v in message_object.arguments.items()},
+                'callsign': callsign, 'ts': ts
+            })
         if type(message_object) == Fragment:
             transaction_middleware.process_fragment(message_object)
+            self.command_interface_gateway.push_received_packet({
+                'type': 'Fragment',
+                'tid': int(message_object.tid),
+                'seq': int(message_object.seq_number),
+                'size': int(len(message_object.payload) if message_object.payload else 0),
+                'callsign': callsign, 'ts': ts
+            })
         if type(message_object) == Variable:
             print(f"\033[32mVariable: {message_object.name}\033[0m")
             self.gs_database.add_variable(message_object, callsign)
+            self.command_interface_gateway.push_received_packet({
+                'type': 'Variable', 'name': message_object.name,
+                'subsystem': message_object.subsystem,
+                'value': str(message_object.value),
+                'callsign': callsign, 'ts': ts
+            })
         if type(message_object) == Ack:
             print(f"\033[32mAck: {message_object}\033[0m\n")
             self.command_interface_gateway.push_ack(message_object.response_status)
+            self.command_interface_gateway.push_received_packet({
+                'type': 'ACK',
+                'rid': int(message_object.response_status),
+                'args': str(message_object.ack_args or ''),
+                'callsign': callsign, 'ts': ts
+            })
 
     @classmethod
     def transmit_message(self):
