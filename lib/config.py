@@ -60,7 +60,7 @@ INGEST_GATEWAY_PORT = 5555
 # Radio Configuration
 # ============================================================
 
-ARGUS_FREQ = 433.707  # MHz
+ARGUS_FREQ = 435.0  # MHz
 
 # ============================================================
 # Satellite config
