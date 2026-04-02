@@ -110,8 +110,14 @@ class CommandInterfaceGateway:
             transaction = transaction_middleware.transaction_manager.get_transaction(tid, is_tx=False)
             if transaction is None:
                 return {'found': False}
-            missing = transaction.missing_fragments if transaction.missing_fragments is not None else []
-            fragments = transaction.fragment_dict if transaction.fragment_dict is not None else {}
+            try:
+                missing = list(transaction.missing_fragments) if transaction.missing_fragments is not None else []
+            except TypeError:
+                missing = []
+            try:
+                fragments = dict(transaction.fragment_dict) if transaction.fragment_dict is not None else {}
+            except TypeError:
+                fragments = {}
             state_val = int(transaction.state) if transaction.state is not None else 1
             nop_val = int(transaction.number_of_packets) if transaction.number_of_packets is not None else 0
             recv_val = len(fragments)
