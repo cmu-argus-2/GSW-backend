@@ -63,7 +63,9 @@ class TransactionMiddleware:
                 self.dump_transaction(transaction, json_file_path)
                 self._dump_queue.task_done()
             except Exception as e:
+                import traceback
                 print(f"[DumpWorker] Error writing transaction to storage: {e}")
+                traceback.print_exc()
 
     def _enqueue_dump(self, transaction, json_file_path):
         """

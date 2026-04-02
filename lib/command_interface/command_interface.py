@@ -81,8 +81,10 @@ class CommandInterfaceGateway:
 
     def push_ack(self, response_status):
         """Called in-process by groundstation when an Ack packet is received from the satellite."""
+        rid = int(response_status)  # ensure plain int for XML-RPC serialization
+        print(f"[push_ack] rid={rid} type={type(response_status).__name__}")
         with self.ack_lock:
-            self.ack_queue.append({'rid': response_status, 'ts': time.time()})
+            self.ack_queue.append({'rid': rid, 'ts': time.time()})
 
     def push_received_packet(self, packet_dict):
         """Called in-process by groundstation to queue a decoded packet for the frontend."""
@@ -103,18 +105,29 @@ class CommandInterfaceGateway:
 
     def get_transaction_status(self, tid):
         """RPC: Return current status of an RX transaction by tid."""
-        transaction = transaction_middleware.transaction_manager.get_transaction(tid, is_tx=False)
-        if transaction is None:
-            return {'found': False}
-        missing = transaction.missing_fragments if transaction.missing_fragments is not None else []
-        fragments = transaction.fragment_dict if transaction.fragment_dict is not None else {}
-        return {
-            'found': True,
-            'state': int(transaction.state) if transaction.state is not None else 1,
-            'number_of_packets': int(transaction.number_of_packets) if transaction.number_of_packets is not None else 0,
-            'received_packets': len(fragments),
-            'missing_count': len(list(missing)),
-        }
+        import traceback
+        try:
+            transaction = transaction_middleware.transaction_manager.get_transaction(tid, is_tx=False)
+            if transaction is None:
+                return {'found': False}
+            missing = transaction.missing_fragments if transaction.missing_fragments is not None else []
+            fragments = transaction.fragment_dict if transaction.fragment_dict is not None else {}
+            state_val = int(transaction.state) if transaction.state is not None else 1
+            nop_val = int(transaction.number_of_packets) if transaction.number_of_packets is not None else 0
+            recv_val = len(fragments)
+            miss_val = len(list(missing))
+            print(f"[get_transaction_status] tid={tid} state={state_val} nop={nop_val} recv={recv_val} miss={miss_val}")
+            return {
+                'found': True,
+                'state': state_val,
+                'number_of_packets': nop_val,
+                'received_packets': recv_val,
+                'missing_count': miss_val,
+            }
+        except Exception as e:
+            print(f"[get_transaction_status] ERROR: {e}")
+            traceback.print_exc()
+            raise
 
     # -------------------------------------------------------------------------
     #
