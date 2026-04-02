@@ -49,7 +49,7 @@ class CommandInterfaceGateway:
 
         self.thread_running = False
 
-        self.server = SimpleXMLRPCServer((host, port), requestHandler=QuietRequestHandler)  # <--- Use the quiet class here)
+        self.server = SimpleXMLRPCServer((host, port), requestHandler=QuietRequestHandler, allow_none=True)
         self.server.register_function(self.add_command, "add_command")   # this is the command that will be  called to add command
         self.server.register_function(self.ping, "ping")    # this is the command that command interface will call to see if the server is available
         self.server.register_function(self.add, "add")      # this is just a test command
@@ -106,12 +106,14 @@ class CommandInterfaceGateway:
         transaction = transaction_middleware.transaction_manager.get_transaction(tid, is_tx=False)
         if transaction is None:
             return {'found': False}
+        missing = transaction.missing_fragments if transaction.missing_fragments is not None else []
+        fragments = transaction.fragment_dict if transaction.fragment_dict is not None else {}
         return {
             'found': True,
-            'state': transaction.state,
-            'number_of_packets': transaction.number_of_packets or 0,
-            'received_packets': len(transaction.fragment_dict),
-            'missing_count': len(transaction.missing_fragments),
+            'state': int(transaction.state) if transaction.state is not None else 1,
+            'number_of_packets': int(transaction.number_of_packets) if transaction.number_of_packets is not None else 0,
+            'received_packets': len(fragments),
+            'missing_count': len(list(missing)),
         }
 
     # -------------------------------------------------------------------------

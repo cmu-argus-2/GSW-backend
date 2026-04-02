@@ -87,13 +87,14 @@ class TransactionMiddleware:
         :param transaction: The transaction object to serialize.
         :param json_file_path: Path for the output JSON file.
         """
+        missing = list(transaction.missing_fragments) if transaction.missing_fragments is not None else []
         transaction_dict = {
             "tid": transaction.tid,
             "file_path": transaction.file_path,
             "state": transaction.state,
             "number_of_packets": transaction.number_of_packets,
-            "len_missing_fragments": len(transaction.missing_fragments),
-            "missing_fragments": transaction.missing_fragments,
+            "len_missing_fragments": len(missing),
+            "missing_fragments": missing,
             "start_date": transaction.start_date,
         }
         
