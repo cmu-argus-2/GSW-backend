@@ -129,6 +129,7 @@ class CommandInterfaceGateway:
                 'number_of_packets': nop_val,
                 'received_packets': recv_val,
                 'missing_count': miss_val,
+                'missing_fragments': list(missing),
             }
         except Exception as e:
             print(f"[get_transaction_status] ERROR: {e}")
