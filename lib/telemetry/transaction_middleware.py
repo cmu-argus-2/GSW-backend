@@ -63,7 +63,9 @@ class TransactionMiddleware:
                 self.dump_transaction(transaction, json_file_path)
                 self._dump_queue.task_done()
             except Exception as e:
+                import traceback
                 print(f"[DumpWorker] Error writing transaction to storage: {e}")
+                traceback.print_exc()
 
     def _enqueue_dump(self, transaction, json_file_path):
         """
@@ -87,13 +89,17 @@ class TransactionMiddleware:
         :param transaction: The transaction object to serialize.
         :param json_file_path: Path for the output JSON file.
         """
+        try:
+            missing = list(transaction.missing_fragments) if transaction.missing_fragments is not None else []
+        except TypeError:
+            missing = []
         transaction_dict = {
             "tid": transaction.tid,
             "file_path": transaction.file_path,
             "state": transaction.state,
             "number_of_packets": transaction.number_of_packets,
-            "len_missing_fragments": len(transaction.missing_fragments),
-            "missing_fragments": transaction.missing_fragments,
+            "len_missing_fragments": len(missing),
+            "missing_fragments": missing,
             "start_date": transaction.start_date,
         }
         

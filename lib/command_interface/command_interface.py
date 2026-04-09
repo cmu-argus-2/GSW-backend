@@ -21,6 +21,7 @@ from lib.telemetry import transaction_middleware
 
 from collections import deque
 import threading
+import time
 
 from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
@@ -41,14 +42,21 @@ class CommandInterfaceGateway:
     
     def __init__(self, host=COMMAND_INTERFACE_IP, port=COMMAND_INTERFACE_PORT):
         self.command_queue = deque()
+        self.ack_queue = deque(maxlen=20)
+        self.ack_lock = threading.Lock()
+        self.rx_packet_queue = deque(maxlen=200)
+        self.rx_packet_lock = threading.Lock()
 
         self.thread_running = False
 
-        self.server = SimpleXMLRPCServer((host, port), requestHandler=QuietRequestHandler)  # <--- Use the quiet class here)
+        self.server = SimpleXMLRPCServer((host, port), requestHandler=QuietRequestHandler, allow_none=True)
         self.server.register_function(self.add_command, "add_command")   # this is the command that will be  called to add command
         self.server.register_function(self.ping, "ping")    # this is the command that command interface will call to see if the server is available
         self.server.register_function(self.add, "add")      # this is just a test command
         self.server.register_function(self.get_command_definitions, "get_command_definitions") # this is the command that will be called to get the command definitions. It will return a list of command names that can be called
+        self.server.register_function(self.get_pending_ack, "get_pending_ack")
+        self.server.register_function(self.get_transaction_status, "get_transaction_status")
+        self.server.register_function(self.get_new_packets, "get_new_packets")
         
         
     # -------------------------------------------------------------------------
@@ -61,16 +69,73 @@ class CommandInterfaceGateway:
         """
         Function that will be called when aci send create trans function
         this will server to deal with the failure of creating the trans
-        
+
         the logic to see if should create the trans or not is in transaction middleware
         this just serves as a function to call it
 
-        
+
         [check] - need to change this. Including the gs here just for this is a terrible idea
         """
-        
+
         return transaction_middleware.process_create_trans(command)
-    
+
+    def push_ack(self, response_status):
+        """Called in-process by groundstation when an Ack packet is received from the satellite."""
+        rid = int(response_status)  # ensure plain int for XML-RPC serialization
+        print(f"[push_ack] rid={rid} type={type(response_status).__name__}")
+        with self.ack_lock:
+            self.ack_queue.append({'rid': rid, 'ts': time.time()})
+
+    def push_received_packet(self, packet_dict):
+        """Called in-process by groundstation to queue a decoded packet for the frontend."""
+        with self.rx_packet_lock:
+            self.rx_packet_queue.append(packet_dict)
+
+    def get_new_packets(self):
+        """RPC: Drain and return all queued decoded packets since the last call."""
+        with self.rx_packet_lock:
+            packets = list(self.rx_packet_queue)
+            self.rx_packet_queue.clear()
+            return packets
+
+    def get_pending_ack(self):
+        """RPC: Pop and return the oldest pending ACK, or None if the queue is empty."""
+        with self.ack_lock:
+            return self.ack_queue.popleft() if self.ack_queue else None
+
+    def get_transaction_status(self, tid):
+        """RPC: Return current status of an RX transaction by tid."""
+        import traceback
+        try:
+            transaction = transaction_middleware.transaction_manager.get_transaction(tid, is_tx=False)
+            if transaction is None:
+                return {'found': False}
+            try:
+                missing = list(transaction.missing_fragments) if transaction.missing_fragments is not None else []
+            except TypeError:
+                missing = []
+            try:
+                fragments = dict(transaction.fragment_dict) if transaction.fragment_dict is not None else {}
+            except TypeError:
+                fragments = {}
+            state_val = int(transaction.state) if transaction.state is not None else 1
+            nop_val = int(transaction.number_of_packets) if transaction.number_of_packets is not None else 0
+            recv_val = len(fragments)
+            miss_val = len(list(missing))
+            print(f"[get_transaction_status] tid={tid} state={state_val} nop={nop_val} recv={recv_val} miss={miss_val}")
+            return {
+                'found': True,
+                'state': state_val,
+                'number_of_packets': nop_val,
+                'received_packets': recv_val,
+                'missing_count': miss_val,
+                'missing_fragments': list(missing),
+            }
+        except Exception as e:
+            print(f"[get_transaction_status] ERROR: {e}")
+            traceback.print_exc()
+            raise
+
     # -------------------------------------------------------------------------
     #
     #      These are the remote function that will be called
