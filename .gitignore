@@ -3,3 +3,7 @@ env/
 *.pyc
 .env
 .env.save
+
+# Received spacecraft data and session logs
+downlinked_data/
+transactions/
