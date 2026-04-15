@@ -1,9 +1,9 @@
 """
 Digipeater End-to-End Test Script
 ----------------------------------
-Sends a raw AX.25 UI frame over LoRa to the CubeSat and listens for the
-digipeated response. A successful test shows the satellite callsign appended
-to the via-path with the H-bit (has-been-repeated) set.
+Sends a LoRa APRS plain-text packet to the CubeSat and listens for the
+digipeated response. A successful test shows the satellite callsign with a
+trailing '*' replacing the WIDE1-1 token in the via-path.
 
 Prerequisites:
   - CubeSat must NOT be in STARTUP state
@@ -13,7 +13,7 @@ Prerequisites:
 Usage:
   python scripts/test_digipeater.py
   python scripts/test_digipeater.py --count 5 --interval 10
-  python scripts/test_digipeater.py --dest CQ --payload "HELLO WORLD" --timeout 20
+  python scripts/test_digipeater.py --payload "HELLO WORLD" --timeout 20
 """
 
 import argparse
@@ -28,77 +28,62 @@ from lib.config import ARGUS_FREQ, GS_CALLSIGN, SC_CALLSIGN
 from lib.radio_utils import initialize_radio
 
 # ---------------------------------------------------------------------------
-# AX.25 frame helpers
-# These mirror the logic in FSW flight/apps/digipeater/ax25.py so the test
-# script has no dependency on the FSW codebase.
+# LoRa APRS packet helpers
 # ---------------------------------------------------------------------------
 
-_AX25_ADDR_LEN = 7
-_AX25_CONTROL_UI = 0x03  # Unnumbered Information frame
-_AX25_PID_NO_L3 = 0xF0   # No layer-3 protocol
+_LORA_APRS_HEADER = b"\x3c\xff\x01"
+_APRS_TOCALL = "APLRT1"
+_APRS_PATH = "WIDE1-1"
 
 
-def _encode_ax25_address(callsign, ssid=0, last=False, h_bit=False):
-    """Encode a callsign into a 7-byte AX.25 address entry."""
-    padded = (callsign.upper() + "      ")[:6]
-    addr = bytearray(7)
-    for i in range(6):
-        addr[i] = ord(padded[i]) << 1
-    ssid_byte = 0x60  # reserved bits (R R = 1 1)
-    ssid_byte |= (ssid & 0x0F) << 1
-    if h_bit:
-        ssid_byte |= 0x80
-    if last:
-        ssid_byte |= 0x01
-    addr[6] = ssid_byte
-    return bytes(addr)
+def build_lora_aprs_packet(src, payload, tocall=_APRS_TOCALL, path=_APRS_PATH):
+    """Build a LoRa APRS plain-text packet.
 
-
-def build_ax25_ui_frame(dest, src, info=b"", dest_ssid=0, src_ssid=0):
-    """Build a minimal AX.25 UI frame with no via-path entries.
-
-    Structure: [Dest(7)] [Src(7)] [Control(1)] [PID(1)] [Info(variable)]
-    The source address has the extension bit set (last address in field).
+    Wire format: [0x3C][0xFF][0x01]SRC>TOCALL,PATH:payload
     """
-    dest_addr = _encode_ax25_address(dest, ssid=dest_ssid, last=False, h_bit=False)
-    src_addr = _encode_ax25_address(src, ssid=src_ssid, last=True, h_bit=False)
-    return dest_addr + src_addr + bytes([_AX25_CONTROL_UI, _AX25_PID_NO_L3]) + info
+    aprs_str = f"{src}>{tocall},{path}:{payload}"
+    return _LORA_APRS_HEADER + aprs_str.encode("ascii")
 
 
-def decode_ax25_addresses(data):
-    """Parse the AX.25 address field from raw frame bytes.
+def parse_lora_aprs_packet(data):
+    """Parse a raw LoRa APRS packet into its components.
 
-    Returns:
-        (addresses, addr_end) where addresses is a list of dicts:
-            {callsign, ssid, h_bit, last}
-        and addr_end is the byte offset where the address field ends.
-        Returns (None, None) if the data is too short or malformed.
+    Returns a dict with keys: src, tocall, path_tokens, payload
+    Returns None if the packet is not a valid LoRa APRS packet.
     """
-    addresses = []
-    i = 0
-    while i + _AX25_ADDR_LEN <= len(data):
-        callsign = ""
-        for j in range(6):
-            callsign += chr(data[i + j] >> 1)
-        callsign = callsign.strip()
-        ssid_byte = data[i + 6]
-        ssid = (ssid_byte >> 1) & 0x0F
-        h_bit = bool(ssid_byte & 0x80)
-        last = bool(ssid_byte & 0x01)
-        addresses.append({"callsign": callsign, "ssid": ssid, "h_bit": h_bit, "last": last})
-        i += _AX25_ADDR_LEN
-        if last:
-            return addresses, i
-    return None, None
+    if not data or len(data) < len(_LORA_APRS_HEADER) + 1:
+        return None
+    if data[: len(_LORA_APRS_HEADER)] != _LORA_APRS_HEADER:
+        return None
+    try:
+        aprs_str = data[len(_LORA_APRS_HEADER) :].decode("ascii")
+    except (UnicodeDecodeError, ValueError):
+        return None
+
+    gt_idx = aprs_str.find(">")
+    if gt_idx < 1:
+        return None
+    colon_idx = aprs_str.find(":", gt_idx + 1)
+    if colon_idx < 0:
+        return None
+
+    src = aprs_str[:gt_idx]
+    tocall_and_path = aprs_str[gt_idx + 1 : colon_idx]
+    payload = aprs_str[colon_idx + 1 :]
+
+    parts = tocall_and_path.split(",")
+    tocall = parts[0]
+    path_tokens = parts[1:]
+
+    return {"src": src, "tocall": tocall, "path_tokens": path_tokens, "payload": payload}
 
 
-def _print_addresses(addresses):
-    """Pretty-print a decoded AX.25 address list."""
-    labels = ["Dest", "Src"] + [f"Via[{k}]" for k in range(len(addresses) - 2)]
-    for label, addr in zip(labels, addresses):
-        ssid_str = f"-{addr['ssid']}" if addr["ssid"] else ""
-        h_str = " [H]" if addr["h_bit"] else ""
-        print(f"    {label:<8}: {addr['callsign']}{ssid_str}{h_str}")
+def _print_aprs_packet(parsed):
+    """Pretty-print a parsed LoRa APRS packet."""
+    print(f"    Src     : {parsed['src']}")
+    print(f"    Tocall  : {parsed['tocall']}")
+    print(f"    Path    : {','.join(parsed['path_tokens']) if parsed['path_tokens'] else '(none)'}")
+    print(f"    Payload : {parsed['payload']}")
 
 
 # ---------------------------------------------------------------------------
@@ -107,12 +92,11 @@ def _print_addresses(addresses):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Send AX.25 frames to the CubeSat and verify digipeater relay."
+        description="Send LoRa APRS packets to the CubeSat and verify digipeater relay."
     )
-    parser.add_argument("--count", type=int, default=3, help="Number of test frames to send (default: 3)")
+    parser.add_argument("--count", type=int, default=3, help="Number of test packets to send (default: 3)")
     parser.add_argument("--interval", type=float, default=5.0, help="Seconds between sends (default: 5.0)")
-    parser.add_argument("--dest", default="APRS", help="AX.25 destination callsign (default: APRS)")
-    parser.add_argument("--payload", default="DIGI TEST", help="Info field text (default: 'DIGI TEST')")
+    parser.add_argument("--payload", default="DIGI TEST", help="APRS info field text (default: 'DIGI TEST')")
     parser.add_argument("--timeout", type=float, default=15.0, help="RX wait timeout per packet in seconds (default: 15.0)")
     args = parser.parse_args()
 
@@ -120,10 +104,10 @@ def main():
     print("  Digipeater End-to-End Test")
     print("=" * 60)
     print(f"  Radio frequency : {ARGUS_FREQ} MHz")
-    print(f"  GS callsign     : {GS_CALLSIGN}  (frame source)")
-    print(f"  SC callsign     : {SC_CALLSIGN}  (expected in via-path)")
-    print(f"  Frame dest      : {args.dest}")
-    print(f"  Test frames     : {args.count}")
+    print(f"  GS callsign     : {GS_CALLSIGN}  (packet source)")
+    print(f"  SC callsign     : {SC_CALLSIGN}  (expected in via-path with *)")
+    print(f"  APRS path       : {_APRS_PATH}")
+    print(f"  Test packets    : {args.count}")
     print(f"  Send interval   : {args.interval}s")
     print(f"  RX timeout      : {args.timeout}s")
     print()
@@ -143,17 +127,17 @@ def main():
     failed = 0
 
     for i in range(args.count):
-        info = f"{args.payload} #{i + 1}".encode()
-        frame = build_ax25_ui_frame(args.dest, GS_CALLSIGN, info=info)
+        payload_str = f"{args.payload} #{i + 1}"
+        packet = build_lora_aprs_packet(GS_CALLSIGN, payload_str)
 
         print(f"[TX #{i + 1}/{args.count}]")
-        print(f"  Dest    : {args.dest}")
         print(f"  Src     : {GS_CALLSIGN}")
-        print(f"  Info    : {info.decode()}")
-        print(f"  Bytes   : {frame.hex()}")
-        print(f"  Length  : {len(frame)} bytes")
+        print(f"  Path    : {_APRS_PATH}")
+        print(f"  Payload : {payload_str}")
+        print(f"  Bytes   : {packet.hex()}")
+        print(f"  Length  : {len(packet)} bytes")
 
-        radio.send(frame)
+        radio.send(packet)
         radio.set_mode_rx()
         radio.receive_success = False
 
@@ -164,35 +148,34 @@ def main():
 
         while time.time() < deadline:
             if radio.receive_success:
-                payload = radio.last_payload
+                raw = radio.last_payload
                 radio.receive_success = False
 
-                msg = payload.message
-                print(f"\n  [RX] {len(msg)} bytes  RSSI: {payload.rssi} dBm  SNR: {payload.snr} dB")
+                msg = raw.message
+                print(f"\n  [RX] {len(msg)} bytes  RSSI: {raw.rssi} dBm  SNR: {raw.snr} dB")
                 print(f"       Raw: {msg.hex()}")
 
-                addresses, addr_end = decode_ax25_addresses(msg)
-                if addresses is None:
-                    print("       Not an AX.25 frame (likely a SPLAT heartbeat from satellite)")
+                parsed = parse_lora_aprs_packet(msg)
+                if parsed is None:
+                    print("       Not a LoRa APRS packet (likely a SPLAT heartbeat from satellite)")
                     # Keep waiting — the actual digipeated frame may still arrive
                     continue
 
-                print("       Addresses:")
-                _print_addresses(addresses)
+                print("       Parsed:")
+                _print_aprs_packet(parsed)
 
-                via_entries = addresses[2:]
+                expected_token = SC_CALLSIGN.strip().upper() + "*"
                 sat_in_path = any(
-                    a["callsign"].strip().upper() == SC_CALLSIGN.strip().upper() and a["h_bit"]
-                    for a in via_entries
+                    t.strip().upper() == expected_token for t in parsed["path_tokens"]
                 )
 
                 if sat_in_path:
-                    print(f"\n  [PASS] {SC_CALLSIGN} found in via-path with H-bit set — digipeater is working!")
+                    print(f"\n  [PASS] {expected_token} found in via-path — digipeater is working!")
                     got_pass = True
                     passed += 1
                     break
                 else:
-                    print(f"\n  [INFO] {SC_CALLSIGN} not in via-path (likely a different packet, still waiting...)")
+                    print(f"\n  [INFO] {expected_token} not in via-path (likely a different packet, still waiting...)")
                     # Keep waiting
 
             time.sleep(0.05)

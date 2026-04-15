@@ -103,6 +103,7 @@ class GS:
             return
 
         print(f"\033[35mFrom SAT: {callsign}\033[0m")
+        print(f"RSSI: {msg_rx.rssi} dBm | SNR: {msg_rx.snr} dB")
         print(f"Raw message bytes: {format_bytes(msg_rx.message)}")
         print(f"Decoded message object: {message_object}")
         

@@ -16,7 +16,7 @@ if __name__ == "__main__" and __package__ is None:
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
 from lib.telemetry.splat.splat.telemetry_definition import command_list, argument_dict, COMMAND_IDS
 from lib.telemetry.splat.splat.telemetry_helper import get_command_size
-from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT
+from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT, SC_CALLSIGN
 from lib.telemetry import transaction_middleware
 
 from collections import deque
@@ -46,6 +46,7 @@ class CommandInterfaceGateway:
         self.ack_lock = threading.Lock()
         self.rx_packet_queue = deque(maxlen=200)
         self.rx_packet_lock = threading.Lock()
+        self.sc_callsign = SC_CALLSIGN
 
         self.thread_running = False
 
@@ -57,6 +58,8 @@ class CommandInterfaceGateway:
         self.server.register_function(self.get_pending_ack, "get_pending_ack")
         self.server.register_function(self.get_transaction_status, "get_transaction_status")
         self.server.register_function(self.get_new_packets, "get_new_packets")
+        self.server.register_function(self.set_sc_callsign, "set_sc_callsign")
+        self.server.register_function(self.get_sc_callsign, "get_sc_callsign")
         
         
     # -------------------------------------------------------------------------
@@ -203,6 +206,16 @@ class CommandInterfaceGateway:
 
         return True
     
+    def set_sc_callsign(self, callsign):
+        """RPC: Set the active satellite callsign."""
+        self.sc_callsign = str(callsign)
+        print(f"[set_sc_callsign] Active satellite set to: {self.sc_callsign}")
+        return True
+
+    def get_sc_callsign(self):
+        """RPC: Return the currently selected satellite callsign."""
+        return self.sc_callsign
+
     def ping(self):
         """
         Function that will be called by command interface periodically to see if everything is working
