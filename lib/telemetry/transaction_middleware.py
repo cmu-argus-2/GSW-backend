@@ -218,6 +218,18 @@ class TransactionMiddleware:
         
         is_completed = transaction.add_fragment(frag)
 
+        if (
+            not is_completed
+            and transaction.number_of_packets is not None
+            and frag.seq_number == transaction.number_of_packets - 1
+        ):
+            missing_fragments = transaction.missing_fragments or []
+            if missing_fragments:
+                print(
+                    f"\033[33mTransaction with tid {tid} received the last fragment "
+                    f"but is still missing fragments: {missing_fragments}\033[0m"
+                )
+
         timestamp_str = datetime.fromtimestamp(transaction.start_date).strftime("%Y_%m_%d-%H_%M_%S")
         json_file_path = os.path.join(self.session_folder, f"{tid}_{timestamp_str}.json")
         self._enqueue_dump(transaction, json_file_path)
