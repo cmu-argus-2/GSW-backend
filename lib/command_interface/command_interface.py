@@ -156,7 +156,7 @@ class CommandInterfaceGateway:
         """
         definitions = []
 
-        for cmd_name, precondition, arguments, _ in command_list:
+        for cmd_name, precondition, arguments in command_list:
             command_info = {
                 "name": cmd_name,
                 "id": COMMAND_IDS[cmd_name],
