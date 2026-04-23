@@ -156,12 +156,11 @@ class CommandInterfaceGateway:
         """
         definitions = []
 
-        for cmd_name, precondition, arguments in command_list:
+        for cmd_name, arguments in command_list:
             command_info = {
                 "name": cmd_name,
                 "id": COMMAND_IDS[cmd_name],
                 "size": get_command_size(cmd_name),
-                "precondition": precondition if precondition is not None else "",
                 "arguments": [
                     {
                         "name": arg_name,
