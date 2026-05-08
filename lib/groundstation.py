@@ -152,6 +152,7 @@ class GS:
             self.command_interface_gateway.push_ack(message_object.response_status)
             self.command_interface_gateway.push_received_packet({
                 'type': 'ACK',
+                'cmd_id': message_object.cmd_id,
                 'rid': int(message_object.response_status),
                 'args': str(message_object.ack_args or ''),
                 'callsign': callsign, 'ts': ts
