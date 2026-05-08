@@ -238,11 +238,24 @@ class TransactionMiddleware:
             print(f"\033[32mTransaction with tid {tid} is completed, all fragments received\033[0m")
             transaction.write_file("downlinked_data")
 
+            relative = transaction.file_path.lstrip('/')
+            local_path = os.path.join("downlinked_data", relative)
+
+            if transaction.file_path.endswith(".log.downlink") or transaction.file_path.endswith(".log"):
+                try:
+                    with open(local_path, "r", errors="replace") as f:
+                        content = f.read()
+                    with open(local_path, "w") as f:
+                        f.write(content.replace("|", "\n"))
+                    print(f"Processed log file: {local_path}")
+                except Exception as e:
+                    print(f"Failed to process log file: {e}")
+
             # if there is img in file name and type is bin, will try and convert to png
             if "img" in transaction.file_path and transaction.file_path.endswith(".bin"):
                 try:
-                    input_file = os.path.join("downlinked_data", transaction.file_path)
-                    output_file = os.path.join("downlinked_data", f"{transaction.file_path.split('.')[0]}.png")
+                    input_file = local_path
+                    output_file = os.path.join("downlinked_data", f"{relative.split('.')[0]}.png")
                     bin_to_png(input_file, output_file)
                 except Exception as e:
                     print(f"Failed to convert binary file to PNG: {e}")
