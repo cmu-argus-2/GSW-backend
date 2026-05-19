@@ -17,6 +17,7 @@ import json
 from lib.telemetry.splat.splat.transport_layer import TransactionManager, Fragment
 from lib.telemetry.splat.splat.telemetry_codec import Command
 import os
+import re
 import time
 import threading
 import queue
@@ -245,8 +246,18 @@ class TransactionMiddleware:
                 try:
                     with open(local_path, "r", errors="replace") as f:
                         content = f.read()
+                    content = content.replace("|", "\n")
+
+                    # convert time to ISO format
+                    def _to_iso(m):
+                        try:
+                            return "[" + datetime.utcfromtimestamp(int(m.group(1))).strftime("%Y-%m-%dT%H:%M:%SZ") + "]"
+                        except (ValueError, OverflowError, OSError):
+                            return m.group(0)
+                    content = re.sub(r"^\[(\d+)\]", _to_iso, content, flags=re.MULTILINE)
+
                     with open(local_path, "w") as f:
-                        f.write(content.replace("|", "\n"))
+                        f.write(content)
                     print(f"Processed log file: {local_path}")
                 except Exception as e:
                     print(f"Failed to process log file: {e}")
