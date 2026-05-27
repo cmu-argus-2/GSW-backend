@@ -1,12 +1,6 @@
 import datetime
-import time
-from collections import deque
-
-import RPi.GPIO as GPIO
 
 import lib.config as config
-
-from lib.radio_utils import initialize_radio
 
 from lib.config import AUTH_KEY, SC_CALLSIGN, GS_CALLSIGN
 from lib.auth.command_auth import compute_mac, get_next_nonce
@@ -22,24 +16,12 @@ from lib.telemetry import transaction_middleware  # This is the class object tha
 
 
 class GS:
-    # Radio abstraction for GS
-    radio = initialize_radio()
-    
     # init the database gateway
     gs_database = GSGateway()
     
     # init the command interface gateway
     command_interface_gateway = CommandInterfaceGateway()
     command_interface_gateway.serve_in_thread()
-
-
-    @classmethod
-    def set_rx_mode(self):
-        """
-        set radio to rx mode
-        """
-        self.radio.set_mode_rx()
-        self.radio.receive_success = False
     
     @classmethod
     def check_tx_cmd_available(self):
@@ -53,44 +35,23 @@ class GS:
         return True
     
     @classmethod
-    def check_rx_packet_available(self):
-        """
-        Use the radio to check if a new packet is available
-        """
-        
-        if self.radio.receive_success == False:
-            # no new packets
-            return False
-        
-        return True
-
-    @classmethod
-    def get_rx_packet(self):
-        """
-        Use the radio to get the latest packet
-        """
-        
-        if self.radio.receive_success == False:
-            # no new packets
-            print("Expected new packet, but not available")
-            return None
-        
-        rx_obj = self.radio.last_payload
-        
-        self.radio.receive_success = False  # reset for next packet
-        
-        return rx_obj
-    
-    @classmethod
     def process_rx_packet(self, msg_rx):
         """
         Will process the latest received packet
         
-        msg_rx is self.radio.last_payload 
+        msg_rx is a raw payload tuple from the radio worker
 
         decode it and add it to the database
         """
-        
+
+        if isinstance(msg_rx, tuple):
+            data_bytes, rssi, snr = msg_rx
+            msg_rx = type(
+                "Payload",
+                (),
+                {"message": data_bytes, "rssi": rssi, "snr": snr},
+            )()
+
         data_bytes = msg_rx.message
  
         try:
@@ -161,10 +122,12 @@ class GS:
     @classmethod
     def transmit_message(self):
         """
-        transmit the latest command in the command queue
+        Build the latest command in the command queue into raw bytes.
         """
 
         command = self.command_interface_gateway.pop_command()
+        if command is None:
+            return None
         
         command_bytes = pack(command, GS_CALLSIGN)
         
@@ -173,12 +136,7 @@ class GS:
             nonce = get_next_nonce()
             mac = compute_mac(bytes.fromhex(AUTH_KEY), command_bytes, nonce)
             command_bytes = nonce + mac + command_bytes   # add teh encryption info to the command
-        
-        
-        command_bytes = command_bytes
-        
-        # header_from and header_to set to 255
-        # Using send() method directly (with_ack=True equivalent)
-        self.radio.send(command_bytes, 255, 0, 0)
 
-        print(f"Transmitted CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
+        print(f"Prepared CMD. \033[34mRequesting {format_bytes(command_bytes)}\033[0m\n")
+
+        return command_bytes

@@ -43,7 +43,13 @@ args = parser.parse_args()
 GS = args.gs
 GS_CHANNEL = 1 if GS == 2 else 0
 GS_INTERRUPT = 23 if GS == 2 else 19
-
+# Pins only available on the Argus RPI hat
+# Not available on the Prometheus dual chip hat
+GS_FIFOTHRESH = 20
+GS_FIFOFULL = 21
+GS_FIFOEMPTY = 13
+# _DIO4_PIN = 26 Not used
+GS_MODEREADY = 16
 
 # ============================================================
 # Network Configuration
