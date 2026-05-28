@@ -97,10 +97,10 @@ class GFSK(object):
 
         #self.setRfFrequency(434_707_000 + 10_000)
         self.setRfFrequency(434_707_000 + 10_000 - 200)
-        self.setFDev(5_000)
+        self.setFDev(7_200)
         self.setBitRate(19_200)
-        self.setPaRamp(Definitions.PA_MOD_BT_03, 0b1001)
-        self.setPreambleSize(512)
+        self.setPaRamp(Definitions.PA_MOD_BT_05, 0b1001)
+        self.setPreambleSize(128)
         self.setSyncWord(0b00 << 6, 0b1 << 5, 0b1 << 4, 0b0 << 3)
         self.setPacketConfig1(Definitions.PACKET_VAR_LEN,
                               Definitions.PACKET_DC_WHITE,
@@ -633,6 +633,8 @@ class GFSK(object):
     def _rxStart(self):
         print("_RXSTART")
         print(bin((self._spi_read(Definitions.REG_0C_LNACONFIG) & 0b1110_0000)>>5))
+        self.data_rssi = -1*int(self._spi_read(0x11)/2)
+        print(self.data_rssi)
         # printState()
         if self._rx_state == 0:
             print("START")
@@ -705,6 +707,7 @@ class GFSK(object):
             self._partial_data.append(available)
         print("  out of while")
         self._rx_state = 2
+        self.noise_rssi = -1*int(self._spi_read(0x11)/2)
         self._last_payload = namedtuple(
                     "Payload",
                     [
@@ -712,7 +715,7 @@ class GFSK(object):
                         "rssi",
                         "snr",
                     ],
-                )(bytes(self._partial_data[1:]), 0, 0)
+               )(bytes(self._partial_data[1:]), self.data_rssi, self.data_rssi-self.noise_rssi)
         self.on_recv(self._last_payload)
         self._partial_data = []
 
