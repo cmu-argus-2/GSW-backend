@@ -40,6 +40,8 @@ def op_mode():
 
     lastPrint = time.time()
     printFreq = 10  # seconds
+    
+    rx_counter = 0
 
     while True:
         new_tx_packet = GS.check_tx_cmd_available()
@@ -48,9 +50,13 @@ def op_mode():
         if msg_rx is not None:
             print("Got new packet")
             GS.process_rx_packet(msg_rx)
+            rx_counter += 1
+            
             
         if new_tx_packet:
             print("Got new command to send")
+            print("   Received packets since last command: ", rx_counter)
+            rx_counter = 0
             command_bytes = GS.transmit_message()
             if command_bytes is not None:
                 radio_process.send(command_bytes)

@@ -98,7 +98,7 @@ class GFSK(object):
         #self.setRfFrequency(434_707_000 + 10_000)
         self.setRfFrequency(434_707_000 + 10_000 - 200)
         self.setFDev(5_000)
-        self.setBitRate(20_000)
+        self.setBitRate(19_200)
         self.setPaRamp(Definitions.PA_MOD_BT_03, 0b1001)
         self.setPreambleSize(512)
         self.setSyncWord(0b00 << 6, 0b1 << 5, 0b1 << 4, 0b0 << 3)
@@ -114,7 +114,7 @@ class GFSK(object):
                               Definitions.PACKET_BEACON_OFF,
                               255)
 
-        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 40)
+        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 30)
 
         self.setPaConfig(Definitions.PA_SELECT_BOOST, 0, 23)
 
@@ -520,23 +520,32 @@ class GFSK(object):
 
     def set_mode_rx(self):
         print("OLA")
+        
         self._rx_state = 0
         self._partial_data = []
+        
+        # lets clear flags before going to rx
+        self._spi_write(Definitions.REG_3F_IRQ_FLAGS2, 0b1<<4)
+        
         if self._mode != Definitions.MODE_RX:
             print("ENTREI")
             self.dioFifoEmpty.when_released = self._rxStart
             self.dioFifoEmpty.when_pressed = self._rxError
-            self.dioFifoThresh.when_pressed = self._rxFifoLevel
+            self.dioFifoThresh.when_pressed = self._rxFifoLevel            
             self.dioTRxState.when_pressed = self._rxEnd
             self.dioFifoFull.when_pressed = self._debugStuff
+
+            self.dioFifoThresh.when_released = None
             
             self.setOpMode(Definitions.MODE_FSRX)
             while not self.dioModeReady.is_pressed:
                 pass
             print("FSRX")
             self.setOpMode(Definitions.MODE_RX)
-            print("SAI")
             self._mode = Definitions.MODE_RX
+            self.reset_lna_gain()   # the idea is to reset the gain to force it to be at max gain when waiting for a new message
+        
+        print("Done set_mode_rx")
 
     def wait_packet_sent(self):
         # wait for `_handle_interrupt` to switch the mode back
@@ -623,6 +632,7 @@ class GFSK(object):
 
     def _rxStart(self):
         print("_RXSTART")
+        print(bin((self._spi_read(Definitions.REG_0C_LNACONFIG) & 0b1110_0000)>>5))
         # printState()
         if self._rx_state == 0:
             print("START")
@@ -632,13 +642,16 @@ class GFSK(object):
 
     def _rxError(self):
         print("_RXERROR")
-        # printState()
+        
+        # print register flags
+        print("IRQ FLAGS", bin(self._spi_read(Definitions.REG_3F_IRQ_FLAGS2)))
+        
         if self._rx_state == 1:
-            print("ERROR")
+            print("  CRC ERROR")
             self._rx_state = -1
             self._partial_data = []
         elif self._rx_state == 2:
-            print("ENDED")
+            print("  ENDED")
             self._rx_state = 0
             print(self._last_payload)
         else:
@@ -647,20 +660,16 @@ class GFSK(object):
             
     def _debugStuff(self):
         print("\nFIFO FULL \n")
-
-        while not self.dioFifoEmpty.is_pressed:
-            available = self._spi_read(Definitions.REG_00_FIFO)
-            print("APP", available)
-            
-        print("OUT FIFO FULL")
+        print("  IRQ FLAGS", bin(self._spi_read(Definitions.REG_3F_IRQ_FLAGS2)))
+        print(" OUT FIFO FULL")
 
     def _rxFifoLevel(self):
-        print("INTO FIFO LEVEL: ", self.dioFifoThresh.is_pressed)
-
         # available = self._spi_read(Definitions.REG_00_FIFO)
         # print("APP - out", available)
-        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 10)
         
+        # set threshold to 5 to maximize how many bytes are being read
+        # but still leave some bytes to not empty the fifo
+        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 5)
 
         # # printState()
         counter = 0
@@ -675,18 +684,26 @@ class GFSK(object):
             #     time.sleep(0.0008)
             
         # print(self.dioFifoThresh.is_pressed)
-        print("  OUT FIFO LEVEL: ", counter)
-        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 40)
-
         
+        # set threshold to 40 to maximize how many bytes are available to read next time
+        self.setFifoTresh(Definitions.START_COND_FIFO_EMPTY, 30)
+        
+    def reset_lna_gain(self):
+        lna_gain = self._spi_read(Definitions.REG_0C_LNACONFIG)
+        lna_gain &= 0b00011111
+        lna_gain |= 0b00100000
+        self._spi_write(Definitions.REG_0C_LNACONFIG, lna_gain)
+        time.sleep(0.3)
+        print(bin((self._spi_read(Definitions.REG_0C_LNACONFIG) & 0b1110_0000)>>5))
+        
+
     def _rxEnd(self):
         print("_RXEND")
         # printState()
         while not self.dioFifoEmpty.is_pressed:
             available = self._spi_read(Definitions.REG_00_FIFO)
-            print("APP", available)
             self._partial_data.append(available)
-        print("out of while")
+        print("  out of while")
         self._rx_state = 2
         self._last_payload = namedtuple(
                     "Payload",
