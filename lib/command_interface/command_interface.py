@@ -44,8 +44,10 @@ class CommandInterfaceGateway:
         self.command_queue = deque()
         self.ack_queue = deque(maxlen=20)
         self.ack_lock = threading.Lock()
+        self._ack_seq = 0
         self.rx_packet_queue = deque(maxlen=200)
         self.rx_packet_lock = threading.Lock()
+        self._packet_seq = 0
         self.sc_callsign = SAT_CALLSIGNS.get(1)
 
         self.thread_running = False
@@ -83,29 +85,30 @@ class CommandInterfaceGateway:
 
         return transaction_middleware.process_create_trans(command)
 
-    def push_ack(self, response_status):
+    def push_ack(self, response_status, callsign=None):
         """Called in-process by groundstation when an Ack packet is received from the satellite."""
         rid = int(response_status)  # ensure plain int for XML-RPC serialization
         print(f"[push_ack] rid={rid} type={type(response_status).__name__}")
         with self.ack_lock:
-            self.ack_queue.append({'rid': rid, 'ts': time.time()})
+            self._ack_seq += 1
+            self.ack_queue.append({'rid': rid, 'ts': time.time(), 'seq': self._ack_seq, 'callsign': callsign})
 
     def push_received_packet(self, packet_dict):
         """Called in-process by groundstation to queue a decoded packet for the frontend."""
         with self.rx_packet_lock:
+            self._packet_seq += 1
+            packet_dict['seq'] = self._packet_seq
             self.rx_packet_queue.append(packet_dict)
 
-    def get_new_packets(self):
-        """RPC: Drain and return all queued decoded packets since the last call."""
+    def get_new_packets(self, since_seq=0):
+        """RPC: Return all packets with seq > since_seq. Non-destructive — safe for multiple clients."""
         with self.rx_packet_lock:
-            packets = list(self.rx_packet_queue)
-            self.rx_packet_queue.clear()
-            return packets
+            return [p for p in self.rx_packet_queue if p.get('seq', 0) > since_seq]
 
-    def get_pending_ack(self):
-        """RPC: Pop and return the oldest pending ACK, or None if the queue is empty."""
+    def get_pending_ack(self, since_seq=0):
+        """RPC: Return all ACKs with seq > since_seq. Non-destructive — safe for multiple clients."""
         with self.ack_lock:
-            return self.ack_queue.popleft() if self.ack_queue else None
+            return [a for a in self.ack_queue if a.get('seq', 0) > since_seq]
 
     def get_transaction_status(self, tid):
         """RPC: Return current status of an RX transaction by tid."""

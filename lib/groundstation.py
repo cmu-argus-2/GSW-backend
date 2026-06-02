@@ -149,7 +149,7 @@ class GS:
             })
         if type(message_object) == Ack:
             print(f"\033[32mAck: {message_object}\033[0m\n")
-            self.command_interface_gateway.push_ack(message_object.response_status)
+            self.command_interface_gateway.push_ack(message_object.response_status, callsign)
             self.command_interface_gateway.push_received_packet({
                 'type': 'ACK',
                 'cmd_id': message_object.cmd_id,

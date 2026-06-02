@@ -129,12 +129,12 @@ class LoRa(object):
 
     def set_mode_tx(self):
         if self._mode != Definitions.MODE_TX:
+            self._mode = Definitions.MODE_TX  # set before sleep so TX_DONE interrupt is handled correctly
             self._spi_write(Definitions.REG_01_OP_MODE, Definitions.MODE_TX)
             self._spi_write(
                 Definitions.REG_40_DIO_MAPPING1, 0x40
             )  # Interrupt on TxDone
             time.sleep(0.2)
-            self._mode = Definitions.MODE_TX
 
     def set_mode_rx(self):
         if self._mode != Definitions.MODE_RXCONTINUOUS:
@@ -246,6 +246,9 @@ class LoRa(object):
 
     def _handle_interrupt(self, channel):
         irq_flags = self._spi_read(Definitions.REG_12_IRQ_FLAGS)
+        print(f"[IRQ] mode={self._mode} irq_flags=0x{irq_flags:02x} "
+              f"RX_DONE={bool(irq_flags & Definitions.RX_DONE)} "
+              f"TX_DONE={bool(irq_flags & Definitions.TX_DONE)}")
 
         if (
             self._mode == Definitions.MODE_RXCONTINUOUS
@@ -253,6 +256,7 @@ class LoRa(object):
             and (self.crc_error() == 0)
         ):
             packet_len = self._spi_read(Definitions.REG_13_RX_NB_BYTES)
+            print(f"[IRQ] RX path taken, packet_len={packet_len}")
             self._spi_write(
                 Definitions.REG_0D_FIFO_ADDR_PTR,
                 self._spi_read(Definitions.REG_10_FIFO_RX_CURRENT_ADDR),
@@ -292,13 +296,22 @@ class LoRa(object):
                 )(message, rssi, snr)
 
                 self.on_recv(self._last_payload)
+            else:
+                print("[IRQ] RX_DONE but packet_len=0, discarding")
+
+        elif self._mode == Definitions.MODE_RXCONTINUOUS and (irq_flags & Definitions.RX_DONE):
+            print(f"[IRQ] RX_DONE dropped — CRC error (total crc errors: {self.crc_error_count})")
 
         elif self._mode == Definitions.MODE_TX and (irq_flags & Definitions.TX_DONE):
-            self.set_mode_idle()
+            print("[IRQ] TX_DONE, going idle")
+            self._mode = Definitions.MODE_STDBY  # SX1276 auto-returns to STDBY after TX
 
         elif self._mode == Definitions.MODE_CAD and (irq_flags & Definitions.CAD_DONE):
             self._cad = irq_flags & Definitions.CAD_DETECTED
             self.set_mode_idle()
+
+        else:
+            print(f"[IRQ] unhandled interrupt — mode={self._mode} flags=0x{irq_flags:02x}")
 
         self._spi_write(Definitions.REG_12_IRQ_FLAGS, 0xFF)
 
