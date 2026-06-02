@@ -8,7 +8,7 @@ import lib.config as config
 
 from lib.radio_utils import initialize_radio
 
-from lib.config import AUTH_KEY, SC_CALLSIGN, GS_CALLSIGN
+from lib.config import SAT_AUTH_KEYS, GS_CALLSIGN
 from lib.auth.command_auth import compute_mac, get_next_nonce
 
 from lib.command_interface.command_interface import CommandInterfaceGateway
@@ -164,15 +164,15 @@ class GS:
         transmit the latest command in the command queue
         """
 
-        command = self.command_interface_gateway.pop_command()
-        
+        command, sat_id = self.command_interface_gateway.pop_command()
+
         command_bytes = pack(command, GS_CALLSIGN)
-        
-        if AUTH_KEY is not None:
-            # means that we want to encrypt the data
+
+        auth_key = SAT_AUTH_KEYS.get(sat_id)
+        if auth_key is not None:
             nonce = get_next_nonce()
-            mac = compute_mac(bytes.fromhex(AUTH_KEY), command_bytes, nonce)
-            command_bytes = nonce + mac + command_bytes   # add teh encryption info to the command
+            mac = compute_mac(bytes.fromhex(auth_key), command_bytes, nonce)
+            command_bytes = nonce + mac + command_bytes
         
         
         command_bytes = command_bytes

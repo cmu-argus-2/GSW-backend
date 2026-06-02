@@ -24,7 +24,8 @@ import time
 # Allow imports from the repo root (lib/) when running as a script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lib.config import ARGUS_FREQ, GS_CALLSIGN, SC_CALLSIGN
+from lib.config import ARGUS_FREQ, GS_CALLSIGN, SAT_CALLSIGNS
+SC_CALLSIGN = SAT_CALLSIGNS[1]
 from lib.radio_utils import initialize_radio
 
 # ---------------------------------------------------------------------------

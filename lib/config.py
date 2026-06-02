@@ -5,7 +5,7 @@ This file defines runtime configuration parameters for the system,
 including network endpoints, authentication settings, and radio frequency.
 
 The configuration is primarily controlled via environment variables
-(e.g., AUTH_KEY) and static defaults defined below.
+(e.g., AUTH_KEY_1, AUTH_KEY_2) and static defaults defined below.
 """
 
 import os, argparse
@@ -21,12 +21,13 @@ MODE = "DBG"  # Options: DBG (debug), PROD (production), etc.
 # Authentication
 # ============================================================
 
-# Command authentication key (expected: 32 hex characters)
-AUTH_KEY = os.getenv("AUTH_KEY")
-if AUTH_KEY is None:
-    print("[ERROR] - No key provided, using default key")
-    AUTH_KEY = "d6172b38acb7d2a28e21662f689d1d15ad78ccc888a9c7a78ef58cb61b0f1e32"
-    
+# Per-satellite auth keys (32 hex chars each).
+# Set AUTH_KEY_1 / AUTH_KEY_2 in the environment; hardcoded values are fallbacks.
+SAT_AUTH_KEYS = {
+    1: os.getenv("AUTH_KEY_1", "d6172b38acb7d2a28e21662f689d1d15ad78ccc888a9c7a78ef58cb61b0f1e32"),
+    2: os.getenv("AUTH_KEY_2", "d6172b38acb7d2a28e21662f689d1d15ad78ccc888a9c7a78ef58cb61b0f1e32"),
+}
+
 
 
 # ============================================================
@@ -66,7 +67,10 @@ ARGUS_FREQ = 435.0  # MHz
 # Satellite config
 # ============================================================
 
-SC_CALLSIGN = "CT6xxx"
+SAT_CALLSIGNS = {
+    1: "CT6xxx",
+    2: "CT6xxx",
+}
 GS_CALLSIGN = "CSXXXX"
 
 # ============================================================
@@ -85,8 +89,9 @@ print("APPLICATION CONFIGURATION")
 print("=" * 55)
 
 print(f"Mode                : {MODE}")
-print(f"Auth Key            : {_mask_key(AUTH_KEY)}")
 print(f"Ground Station No.  : {GS}")
+for _sat_id, _key in SAT_AUTH_KEYS.items():
+    print(f"Auth Key (SAT{_sat_id})   : {_mask_key(_key)}")
 
 print("\n[Command Interface]")
 print(f"  Address           : {COMMAND_INTERFACE_IP}")
@@ -101,6 +106,7 @@ print(f"  ARGUS Frequency   : {ARGUS_FREQ:.3f} MHz")
 
 print("\n[Satellite]")
 print(f"  GS          : {GS_CALLSIGN}")
-print(f"  SC          : {SC_CALLSIGN}")
+for _sat_id, _callsign in SAT_CALLSIGNS.items():
+    print(f"  SAT{_sat_id}        : {_callsign}")
 
 print("=" * 55 + "\n")

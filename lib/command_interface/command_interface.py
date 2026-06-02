@@ -16,7 +16,7 @@ if __name__ == "__main__" and __package__ is None:
 from lib.telemetry.splat.splat.telemetry_codec import pack, unpack, Report, Variable, Command
 from lib.telemetry.splat.splat.telemetry_definition import command_list, argument_dict, COMMAND_IDS
 from lib.telemetry.splat.splat.telemetry_helper import get_command_size
-from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT, SC_CALLSIGN
+from lib.config import COMMAND_INTERFACE_IP, COMMAND_INTERFACE_PORT, SAT_CALLSIGNS
 from lib.telemetry import transaction_middleware
 
 from collections import deque
@@ -46,7 +46,7 @@ class CommandInterfaceGateway:
         self.ack_lock = threading.Lock()
         self.rx_packet_queue = deque(maxlen=200)
         self.rx_packet_lock = threading.Lock()
-        self.sc_callsign = SC_CALLSIGN
+        self.sc_callsign = SAT_CALLSIGNS.get(1)
 
         self.thread_running = False
 
@@ -60,6 +60,7 @@ class CommandInterfaceGateway:
         self.server.register_function(self.get_new_packets, "get_new_packets")
         self.server.register_function(self.set_sc_callsign, "set_sc_callsign")
         self.server.register_function(self.get_sc_callsign, "get_sc_callsign")
+        self.server.register_function(self.get_satellite_targets, "get_satellite_targets")
         
         
     # -------------------------------------------------------------------------
@@ -172,36 +173,46 @@ class CommandInterfaceGateway:
             definitions.append(command_info)
 
         return definitions
+
+    def get_satellite_targets(self):
+        """RPC: Return frontend-safe satellite target metadata."""
+        return [
+            {
+                "id": int(sat_id),
+                "callsign": str(callsign),
+            }
+            for sat_id, callsign in sorted(SAT_CALLSIGNS.items())
+        ]
         
-    def add_command(self, cmd_name, cmd_args):
+    def add_command(self, cmd_name, cmd_args, sat_id=1):
         """
         This is the function that will be called to add a command
         it will receive a json with cmd_name and cmd_args
         cmd_args will already be in the correct type
+        sat_id identifies which satellite the command is destined for
         """
-        
-        print(f"Received command: cmd_name={cmd_name}, cmd_args={cmd_args}")
-        
+
+        print(f"Received command: cmd_name={cmd_name}, cmd_args={cmd_args}, sat_id={sat_id}")
+
         # check if cmd has cmd_name and cmd_args
         if type(cmd_name) != str or type(cmd_args) != dict:
             print("Invalid command format")
             print(f"   Received cmd_name: {cmd_name}, type: {type(cmd_name)}")
             return False
-        
+
         commnad = Command(cmd_name)
-                
+
         for arg_name, arg_value in cmd_args.items():
             commnad.add_argument(arg_name, arg_value)
-            
+
         # check to see if command is create_trans
         if cmd_name == "CREATE_TRANS":
             if not self.create_trans(commnad):
                 # means that creating the transaction failed and I do not want to send the message
                 return False
-                
 
-        self.command_queue.append(commnad)
-        print(f"Added command to queue: {commnad}")
+        self.command_queue.append((commnad, sat_id))
+        print(f"Added command to queue: {commnad} -> SAT{sat_id}")
 
         return True
     
@@ -275,17 +286,13 @@ class CommandInterfaceGateway:
     
     def pop_command(self):
         """
-        This function will be called by the groundstation to get the next command
-        it will return None if there are no commands in the queue
-        if there are commands in the queue it will return the first command and remove it
-        return Command Object
+        Returns (Command, sat_id) for the next queued command, or None if empty.
         """
-        
         if self.command_queue:
-            cmd = self.command_queue.popleft()
-            print(f"Removed command from queue: {cmd}")
-            return cmd
-        
+            cmd, sat_id = self.command_queue.popleft()
+            print(f"Removed command from queue: {cmd} -> SAT{sat_id}")
+            return cmd, sat_id
+
         return None
 
     def commands_available(self):
