@@ -164,9 +164,11 @@ def digi_demo():
                         msg_rx = None
 
                 if msg_rx is not None:
-                    print()
-                    print(f"{GREEN}RX: {msg_rx}{RESET}")
-                    print("> ", end="", flush=True)
+                    if "CT6ENG*" in msg_rx.message[3:].decode("utf-8", errors="ignore"):
+                        # means that it was a repeated message, want to ignore in
+                        print()
+                        print(f"{GREEN}RX: {msg_rx}{RESET}")
+                        print("> ", end="", flush=True)
 
             except Exception as e:
                 print()
