@@ -1,8 +1,8 @@
 import sys
 
 
-from lib.shell_utils import op_mode, digipeater_test
-
+from lib.shell_utils import op_mode, digipeater_test, digi_demo
+digi_demo()
 
 while True:
     connection_prompt = """
