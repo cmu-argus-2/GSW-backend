@@ -199,6 +199,7 @@ def digi_demo():
 
             aprs_packet = f"{callsign}>{destination},{path}:{user_msg}"
             packet = digipeater_header + aprs_packet.encode("utf-8")
+            packet = packet[:255]  # LoRa payload limit
 
             print(f"{BLUE}TX: {packet}{RESET}")
 
